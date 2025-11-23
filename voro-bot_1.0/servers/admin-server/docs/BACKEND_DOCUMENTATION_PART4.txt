@@ -1,0 +1,234 @@
+BACKEND DOCUMENTATION - Part 4: admin-api.js
+================================================================================
+
+FILE: admin-api.js
+PURPOSE: Provides API endpoints for the admin panel to manage content
+
+================================================================================
+UNDERSTANDING REST APIs
+================================================================================
+
+REST API = A way for programs to talk to each other using HTTP
+
+HTTP METHODS:
+- GET: Retrieve data (like reading a book)
+- POST: Create new data (like writing a new book)
+- PUT: Update existing data (like editing a book)
+- DELETE: Remove data (like throwing away a book)
+
+EXAMPLE:
+GET /api/admin/topics → Get all topics
+POST /api/admin/topics → Create new topic
+PUT /api/admin/topics/5 → Update topic #5
+DELETE /api/admin/topics/5 → Delete topic #5
+
+================================================================================
+LINE-BY-LINE EXPLANATION
+================================================================================
+
+LINE 1-3: const sqlite3 = require('sqlite3').verbose(); const path = require('path'); const { DB_PATH } = require('./database');
+--------
+WHAT IT DOES: Loads required libraries and database path
+WHY: Needs database access
+
+LINE 6-8: function getDb() {return new sqlite3.Database(DB_PATH);}
+--------
+WHAT IT DOES: Creates a new database connection
+WHY: Each API call gets fresh connection (safer)
+NOTE: Connection is closed after each request
+
+LINE 11: function setupAdminRoutes(app) {...}
+--------
+WHAT IT DOES: Sets up all admin API routes
+PARAMETER: app - The Express application
+WHY: Organizes admin endpoints
+
+LINE 13-31: app.get('/api/admin/topics', (req, res) => {...});
+--------
+WHAT IT DOES: Gets all topics with option counts
+SQL:
+  - SELECT t.*, COUNT(o.id) as option_count: Get topic data + count options
+  - FROM topics t: Main table (alias 't')
+  - LEFT JOIN options o ON t.id = o.topic_id: Include options
+  - GROUP BY t.id: Group by topic
+  - ORDER BY t.id: Sort by ID
+RESULT: [{id: 1, name: "Admissions", option_count: 2}, ...]
+WHY: Admin panel shows topic list
+
+LINE 34-62: app.get('/api/admin/topics/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Gets one topic with all its options
+SYNTAX:
+  - :id: URL parameter (placeholder)
+  - req.params.id: Gets the value
+EXAMPLE: GET /api/admin/topics/5 → req.params.id = "5"
+PROCESS:
+  1. Get topic by ID
+  2. Get all options for that topic
+  3. Combine and return
+WHY: Admin can view/edit specific topic
+
+LINE 65-88: app.post('/api/admin/topics', (req, res) => {...});
+--------
+WHAT IT DOES: Creates a new topic
+VALIDATION:
+  - if (!key || !name): Check required fields
+SQL:
+  - INSERT INTO topics: Add new row
+  - VALUES (?, ?, ?, CURRENT_TIMESTAMP): Data + auto timestamp
+RESPONSE:
+  - res.json({id: this.lastID, ...}): Return new topic with ID
+WHY: Admin can add new topics
+
+LINE 91-116: app.put('/api/admin/topics/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Updates an existing topic
+SQL:
+  - UPDATE topics SET name = ?, icon = ?: Change fields
+  - WHERE id = ?: Which topic to update
+CHECK:
+  - if (this.changes === 0): No rows updated = not found
+WHY: Admin can edit topics
+
+LINE 119-139: app.delete('/api/admin/topics/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Deletes a topic
+SQL:
+  - DELETE FROM topics WHERE id = ?: Remove row
+CASCADE:
+  - Options are auto-deleted (FOREIGN KEY ON DELETE CASCADE)
+WHY: Admin can remove topics
+
+LINE 142-156: app.get('/api/admin/topics/:topicId/options', (req, res) => {...});
+--------
+WHAT IT DOES: Gets all options for a topic
+WHY: Admin can see topic's options
+
+LINE 159-190: app.post('/api/admin/topics/:topicId/options', (req, res) => {...});
+--------
+WHAT IT DOES: Creates a new option for a topic
+SYNTAX:
+  - option_key.toUpperCase(): Converts to uppercase (a → A)
+WHY: Admin can add options to topics
+
+LINE 193-223: app.put('/api/admin/options/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Updates an existing option
+WHY: Admin can edit option content
+
+LINE 226-246: app.delete('/api/admin/options/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Deletes an option
+WHY: Admin can remove options
+
+LINE 249-263: app.get('/api/admin/feedback', (req, res) => {...});
+--------
+WHAT IT DOES: Gets all feedback
+SQL:
+  - ORDER BY created_at DESC: Newest first
+WHY: Admin can see user feedback
+
+LINE 266-290: app.get('/api/admin/logins', (req, res) => {...});
+--------
+WHAT IT DOES: Gets all user logins
+SQL:
+  - SELECT l.*, u.*: Get login data + user data
+  - FROM user_logins l: Login history table
+  - LEFT JOIN users u ON l.user_id = u.id: Include user details
+RESULT: [{username: "John", login_time: "2024-01-01", email: "john@...", ...}]
+WHY: Admin can see who logged in and when
+
+LINE 293-313: app.get('/api/admin/feedback/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Gets one specific feedback
+WHY: Admin can view feedback details
+
+LINE 316-346: app.put('/api/admin/feedback/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Updates feedback status
+VALIDATION:
+  - !['new', 'read', 'replied', 'archived'].includes(status): Check valid status
+STATUSES:
+  - new: Just received
+  - read: Admin viewed it
+  - replied: Admin responded
+  - archived: Closed/resolved
+WHY: Admin can track feedback progress
+
+LINE 349-369: app.delete('/api/admin/feedback/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Deletes feedback
+WHY: Admin can remove spam/old feedback
+
+LINE 374-388: app.get('/api/admin/queries', (req, res) => {...});
+--------
+WHAT IT DOES: Gets all user queries
+WHY: Admin can see what students asked
+
+LINE 391-421: app.put('/api/admin/queries/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Updates query status
+WHY: Admin can mark queries as handled
+
+LINE 424-444: app.delete('/api/admin/queries/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Deletes a query
+WHY: Admin can clean up old queries
+
+LINE 449-470: app.get('/api/admin/users', (req, res) => {...});
+--------
+WHAT IT DOES: Gets all registered users
+SQL:
+  - SELECT u.id, u.username, u.email, u.full_name, u.login_count, u.created_at, u.last_login: User info
+  - ORDER BY u.created_at DESC: Newest first
+WHY: Admin can see all users
+
+LINE 473-493: app.get('/api/admin/users/active', (req, res) => {...});
+--------
+WHAT IT DOES: Gets currently logged-in users
+SQL:
+  - INNER JOIN user_sessions s: Only users with active sessions
+RESULT: Only shows users currently online
+WHY: Admin can see who's using the system right now
+
+LINE 496-529: app.delete('/api/admin/users/:id', (req, res) => {...});
+--------
+WHAT IT DOES: Deletes a user account
+PROCESS:
+  1. Check if user exists
+  2. Delete user (sessions auto-deleted by CASCADE)
+  3. Return success message
+WHY: Admin can remove user accounts
+
+LINE 532: module.exports = setupAdminRoutes;
+--------
+WHAT IT DOES: Exports the setup function
+WHY: index.js can call this to set up routes
+
+================================================================================
+SUMMARY
+================================================================================
+
+admin-api.js provides the ADMIN CONTROL PANEL API. It allows:
+
+CONTENT MANAGEMENT:
+- Create/Read/Update/Delete topics
+- Create/Read/Update/Delete options
+
+USER MANAGEMENT:
+- View all users
+- View active users
+- Delete users
+- See login history
+
+FEEDBACK MANAGEMENT:
+- View feedback
+- Update feedback status
+- Delete feedback
+
+QUERY MANAGEMENT:
+- View queries
+- Update query status
+- Delete queries
+
+All operations use REST API principles with proper HTTP methods.

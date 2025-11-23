@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voro Bot</title>
+    <meta
+      name="description"
+      content="Voro Bot is your intelligent campus guide, helping you navigate admissions, academics, facilities, and student life with ease."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        /* Light Theme Colors */
+        --background: 220 25% 97%;
+        --foreground: 220 15% 15%;
+        --card: 0 0% 100%;
+        --card-foreground: 220 15% 15%;
+        --primary: 200 95% 45%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 220 15% 95%;
+        --secondary-foreground: 220 15% 15%;
+        --muted: 220 15% 95%;
+        --muted-foreground: 220 10% 45%;
+        --accent: 180 80% 50%;
+        --accent-foreground: 220 15% 15%;
+        --border: 220 15% 90%;
+        --input: 220 15% 90%;
+        --chat-assistant: 220 20% 98%;
+        --chat-user: 200 95% 45%;
+
+        /* Gradients */
+        --gradient-primary: linear-gradient(
+          135deg,
+          hsl(200, 95%, 45%),
+          hsl(180, 80%, 50%)
+        );
+
+        /* Shadows */
+        --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.08);
+        --shadow-large: 0 8px 32px rgba(0, 0, 0, 0.12);
+      }
+
+      .dark {
+        --background: 220 20% 10%;
+        --foreground: 220 10% 95%;
+        --card: 220 18% 14%;
+        --card-foreground: 220 10% 95%;
+        --primary: 200 95% 55%;
+        --primary-foreground: 220 20% 10%;
+        --secondary: 220 18% 18%;
+        --secondary-foreground: 220 10% 95%;
+        --muted: 220 18% 18%;
+        --muted-foreground: 220 10% 60%;
+        --accent: 180 70% 50%;
+        --accent-foreground: 220 10% 95%;
+        --border: 220 18% 22%;
+        --input: 220 18% 22%;
+        --chat-assistant: 220 18% 16%;
+        --chat-user: 200 95% 55%;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+
+      /* Header */
+      header {
+        border-bottom: 1px solid hsl(var(--border));
+        background: hsl(var(--card) / 0.5);
+        backdrop-filter: blur(8px);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 0;
+      }
+
+      .logo-section {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .logo-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-medium);
+        color: white;
+        font-size: 1.2rem;
+      }
+
+      .logo-text h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .logo-text p {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .icon-button {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: hsl(var(--foreground));
+        font-size: 1.1rem;
+      }
+
+      .icon-button:hover {
+        background: hsl(var(--secondary));
+        transform: translateY(-1px);
+      }
+
+      /* Main Chat Area */
+      main {
+        padding: 1.5rem 0;
+      }
+
+      .chat-card {
+        max-width: 56rem;
+        margin: 0 auto;
+        background: hsl(var(--card) / 0.8);
+        backdrop-filter: blur(8px);
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-large);
+        overflow: hidden;
+      }
+
+      .messages-container {
+        height: calc(100vh - 280px);
+        min-height: 400px;
+        overflow-y: auto;
+        padding: 1.5rem;
+      }
+
+      .message {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        flex-direction: row-reverse;
+      }
+
+      .avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: var(--shadow-soft);
+        font-size: 1.2rem;
+      }
+
+      .avatar.assistant {
+        background: hsl(var(--chat-assistant));
+        border: 1px solid hsl(var(--border));
+        color: hsl(var(--primary));
+      }
+
+      .avatar.user {
+        background: var(--gradient-primary);
+        color: white;
+      }
+
+      .message-content {
+        max-width: 70%;
+        padding: 0.875rem 1.25rem;
+        border-radius: 1rem;
+        line-height: 1.6;
+        font-size: 0.938rem;
+      }
+
+      .message.assistant .message-content {
+        background: hsl(var(--chat-assistant));
+        border: 1px solid hsl(var(--border));
+        box-shadow: var(--shadow-soft);
+        color: hsl(var(--foreground));
+      }
+
+      .message.user .message-content {
+        background: var(--gradient-primary);
+        color: white;
+        box-shadow: var(--shadow-soft);
+      }
+
+      /* Typing Indicator */
+      .typing-dots {
+        display: flex;
+        gap: 0.25rem;
+      }
+
+      .typing-dots span {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        animation: bounce 1s infinite ease-in-out;
+      }
+
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          opacity: 0.2;
+          transform: translateY(0);
+        }
+
+        50% {
+          opacity: 1;
+          transform: translateY(-4px);
+        }
+      }
+
+      /* Buttons */
+      .topic-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        animation: slideUp 0.3s ease;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .topic-button {
+        padding: 1rem;
+        border: 1px solid hsl(var(--border));
+        border-radius: 0.75rem;
+        background: hsl(var(--card));
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .topic-button:hover {
+        box-shadow: var(--shadow-medium);
+        transform: translateY(-2px);
+      }
+
+      .topic-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        background: hsl(var(--primary) / 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+        color: hsl(var(--primary));
+        font-size: 1.2rem;
+      }
+
+      .topic-button:hover .topic-icon {
+        background: hsl(var(--primary) / 0.2);
+      }
+
+      .topic-button span {
+        font-weight: 500;
+        color: hsl(var(--foreground));
+      }
+
+      .option-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        animation: slideUp 0.3s ease;
+      }
+
+      .option-button {
+        padding: 1rem 1.25rem;
+        border: 1px solid hsl(var(--border));
+        border-radius: 0.75rem;
+        background: hsl(var(--card));
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .option-button:hover {
+        border-color: hsl(var(--primary));
+        box-shadow: var(--shadow-medium);
+      }
+
+      .option-content {
+        flex: 1;
+      }
+
+      .option-key {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: hsl(var(--primary));
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+      }
+
+      .option-title {
+        font-weight: 500;
+        color: hsl(var(--foreground));
+        margin-bottom: 0.125rem;
+      }
+
+      .option-description {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .option-button i {
+        color: hsl(var(--muted-foreground));
+        font-size: 1.2rem;
+      }
+
+      /* Input Area */
+      .input-area {
+        border-top: 1px solid hsl(var(--border));
+        padding: 1rem;
+        background: hsl(var(--card) / 0.5);
+        backdrop-filter: blur(8px);
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .reset-button {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.75rem;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem;
+        color: hsl(var(--foreground));
+      }
+
+      .reset-button:hover {
+        background: hsl(var(--secondary));
+      }
+
+      .reset-button i {
+        font-size: 1rem;
+        color: hsl(var(--foreground));
+      }
+
+      .reset-button span {
+        font-size: 0.5rem;
+        color: hsl(var(--muted-foreground));
+        margin-top: 0.125rem;
+      }
+
+      .message-input {
+        flex: 1;
+        padding: 0.75rem 1.25rem;
+        border: 1px solid hsl(var(--input));
+        border-radius: 0.75rem;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.2s ease;
+      }
+
+      .message-input:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+      }
+
+      .send-button {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.75rem;
+        border: none;
+        background: var(--gradient-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+      }
+
+      .send-button:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      .send-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Footer */
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: hsl(var(--card));
+        border-radius: 1rem;
+        padding: 1.5rem;
+        max-width: 28rem;
+        width: 90%;
+        box-shadow: var(--shadow-large);
+        color: hsl(var(--foreground));
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: hsl(var(--muted-foreground));
+        line-height: 1;
+        padding: 0;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid hsl(var(--border));
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+      }
+
+      .contact-item:hover {
+        border-color: hsl(var(--primary));
+        box-shadow: var(--shadow-medium);
+      }
+
+      .contact-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        background: hsl(var(--primary) / 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: hsl(var(--primary));
+        font-size: 1.5rem;
+      }
+
+      .contact-details {
+        flex: 1;
+      }
+
+      .contact-label {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+        margin-bottom: 0.25rem;
+      }
+
+      .contact-value {
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        word-break: break-all;
+      }
+
+      .contact-link {
+        color: hsl(var(--primary));
+        text-decoration: none;
+      }
+
+      .contact-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Feedback Form Styles */
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: hsl(var(--foreground));
+      }
+
+      .form-input,
+      .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid hsl(var(--input));
+        border-radius: 0.5rem;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: inherit;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .form-input:focus,
+      .form-textarea:focus {
+        border-color: hsl(var(--primary));
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* Scrollbar */
+      .messages-container::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .messages-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .messages-container::-webkit-scrollbar-thumb {
+        background: hsl(var(--primary) / 0.3);
+        border-radius: 3px;
+      }
+
+      .messages-container::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--primary) / 0.5);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .logo-text h1 {
+          font-size: 1.25rem;
+        }
+
+        .logo-text p {
+          display: none;
+        }
+
+        .messages-container {
+          height: calc(100vh - 240px);
+        }
+
+        .message-content {
+          max-width: 85%;
+        }
+
+        .topic-buttons {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="container">
+        <div class="header-content">
+          <div class="logo-section">
+            <div class="logo-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect width="18" height="12" x="3" y="6" rx="2" />
+                <path d="M9 14v.01" />
+                <path d="M15 14v.01" />
+                <path d="M12 2v4" />
+                <path d="M12 22v-4" />
+              </svg>
+            </div>
+            <div class="logo-text">
+              <h1>Voro Bot</h1>
+              <p>version 1.0</p>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button
+              class="icon-button"
+              onclick="goBack()"
+              title="Back"
+              id="headerBackBtn"
+              style="display: none"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m12 19-7-7 7-7" />
+                <path d="M19 12H5" />
+              </svg>
+            </button>
+            <button
+              class="icon-button"
+              onclick="showFeedbackModal()"
+              title="Send Feedback"
+            >
+              <i class="fi fi-rr-comment-alt"></i>
+            </button>
+            <button
+              class="icon-button"
+              onclick="showSupport()"
+              title="Contact Support"
+            >
+              <i class="fi fi-rr-headset"></i>
+            </button>
+            <button
+              class="icon-button"
+              onclick="toggleTheme()"
+              title="Toggle theme"
+              id="themeToggle"
+            >
+              <i class="fi fi-rr-moon"></i>
+            </button>
+            <button class="icon-button" onclick="logout()" title="Logout">
+              <i class="fi fi-rr-sign-out-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Chat Area -->
+    <main>
+      <div class="container">
+        <div class="chat-card">
+          <div class="messages-container" id="messagesContainer">
+            <div class="message assistant">
+              <div class="avatar assistant">
+                <i class="fi fi-rr-robot"></i>
+              </div>
+              <div class="message-content">
+                Hi there! I'm Voro Bot, your campus guide. How can I help you
+                today?
+              </div>
+            </div>
+          </div>
+
+          <div class="input-area">
+            <button class="reset-button" onclick="resetChat()" title="Home">
+              <i class="fi fi-rr-home"></i>
+              <span>Home</span>
+            </button>
+            <input
+              type="text"
+              class="message-input"
+              placeholder="Type your query here..."
+              id="messageInput"
+              onkeypress="handleKeyPress(event)"
+            />
+            <button
+              class="send-button"
+              onclick="sendMessage()"
+              id="sendButton"
+              title="Send Message"
+            >
+              <i class="fi fi-rr-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+
+        <footer>
+          <p>
+            Voro Bot - Powered by Dr. Antonio Da Silva Technical High School &
+            Junior College to help you navigate campus life<br /><small
+              style="font-size: 0.75rem; opacity: 0.7"
+              >version 1.0</small
+            >
+          </p>
+        </footer>
+      </div>
+    </main>
+
+    <!-- Support Modal -->
+    <div
+      class="modal"
+      id="supportModal"
+      onclick="closeModalOnOutsideClick(event)"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Contact Support</h2>
+          <button class="modal-close" onclick="closeSupport()">&times;</button>
+        </div>
+        <div class="contact-info">
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="fi fi-rr-phone-call"></i>
+            </div>
+            <div class="contact-details">
+              <div class="contact-label">Phone</div>
+              <a
+                href="tel:+912224131234"
+                class="contact-value contact-link"
+                id="contactPhone"
+                >+91-22-2413-1234</a
+              >
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="fi fi-rr-envelope"></i>
+            </div>
+            <div class="contact-details">
+              <div class="contact-label">Email</div>
+              <a
+                href="mailto:info@college.edu"
+                class="contact-value contact-link"
+                id="contactEmail"
+                >dasilvatrust@gmail.com</a
+              >
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="fi fi-rr-marker"></i>
+            </div>
+            <div class="contact-details">
+              <div class="contact-label">Address</div>
+              <div class="contact-value" id="contactAddress">
+                Dr. Antonio da Silva Trust, S.K. Bole Marg, Dadar (W), MUMBAI -
+                400028 Maharashtra
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div
+      class="modal"
+      id="feedbackModal"
+      onclick="closeModalOnOutsideClick(event)"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Send Feedback</h2>
+          <button class="modal-close" onclick="closeFeedbackModal()">
+            &times;
+          </button>
+        </div>
+        <form id="feedbackForm" onsubmit="submitFeedback(event)">
+          <div class="form-group">
+            <label class="form-label">Name (Optional)</label>
+            <input
+              type="text"
+              id="feedbackName"
+              class="form-input"
+              placeholder="Your name"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email (Optional)</label>
+            <input
+              type="email"
+              id="feedbackEmail"
+              class="form-input"
+              placeholder="Your email"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea
+              id="feedbackMessage"
+              class="form-textarea"
+              required
+              placeholder="What's on your mind?"
+              rows="4"
+            ></textarea>
+          </div>
+          <button type="submit" class="btn-primary" style="margin-top: 1rem">
+            Send Feedback
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div
+      class="modal"
+      id="loginModal"
+      onclick="closeModalOnOutsideClick(event)"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Enter Your Details</h2>
+          <button class="modal-close" onclick="closeLoginModal()">
+            &times;
+          </button>
+        </div>
+        <p style="margin-bottom: 20px; color: hsl(220, 10%, 45%)">
+          Please enter your details to continue
+        </p>
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input
+              type="text"
+              id="loginFullName"
+              class="form-input"
+              placeholder="Enter your full name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Grade/Class</label>
+            <input
+              type="text"
+              id="loginGrade"
+              class="form-input"
+              placeholder="e.g., 10th Grade"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Roll Number</label>
+            <input
+              type="text"
+              id="loginRollNo"
+              class="form-input"
+              placeholder="Enter your roll number"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input
+              type="email"
+              id="loginEmail"
+              class="form-input"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div
+            id="loginError"
+            style="color: hsl(0, 70%, 50%); margin-bottom: 10px; display: none"
+          ></div>
+          <button type="submit" class="btn-primary" id="loginSubmitBtn">
+            Continue
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const BACKEND_URL = "http://localhost:4000/api";
+      let botState = "menu";
+      let selectedTopic = null;
+      let collegeData = {};
+      let isDark = false;
+
+      // Check authentication on page load
+      async function checkAuth() {
+        try {
+          const response = await fetch(`${BACKEND_URL}/user/check-auth`, {
+            credentials: "include",
+          });
+          const data = await response.json();
+          return data.authenticated;
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          return false;
+        }
+      }
+
+      // Logout function
+      async function logout() {
+        try {
+          await fetch(`${BACKEND_URL}/user/logout`, {
+            method: "POST",
+            credentials: "include",
+          });
+          window.location.href = "/user/login";
+        } catch (error) {
+          console.error("Logout failed:", error);
+          window.location.href = "/user/login";
+        }
+      }
+
+      // Initialize on page load
+      window.addEventListener("DOMContentLoaded", async () => {
+        // Load theme preference
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+          isDark = true;
+          document.body.classList.add("dark");
+          updateThemeIcon();
+        }
+
+        // Always load topics (bot shows immediately)
+        await loadTopics();
+      });
+
+      // Theme Toggle
+      function toggleTheme() {
+        isDark = !isDark;
+        if (isDark) {
+          document.body.classList.add("dark");
+          localStorage.setItem("theme", "dark");
+        } else {
+          document.body.classList.remove("dark");
+          localStorage.setItem("theme", "light");
+        }
+        updateThemeIcon();
+      }
+
+      function updateThemeIcon() {
+        const themeToggle = document.getElementById("themeToggle");
+        if (isDark) {
+          themeToggle.innerHTML = '<i class="fi fi-rr-sun"></i>';
+        } else {
+          themeToggle.innerHTML = '<i class="fi fi-rr-moon"></i>';
+        }
+      }
+
+      // Load Topics
+      async function loadTopics() {
+        try {
+          const response = await fetch(`${BACKEND_URL}/topics`);
+          if (!response.ok) throw new Error("Failed to load topics");
+          collegeData = await response.json();
+          showMenu();
+        } catch (error) {
+          console.error("Error loading topics:", error);
+          addMessage(
+            "assistant",
+            "Unable to connect to the server. Please ensure the backend is running on http://localhost:4000"
+          );
+        }
+      }
+
+      // Robot Icon SVG
+      const ROBOT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="6" rx="2"/><path d="M9 14v.01"/><path d="M15 14v.01"/><path d="M12 2v4"/><path d="M12 22v-4"/></svg>`;
+      const USER_ICON = `<i class="fi fi-rr-user"></i>`;
+
+      // Messages
+      function addMessage(role, content) {
+        const container = document.getElementById("messagesContainer");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${role}`;
+
+        const icon = role === "assistant" ? ROBOT_ICON : USER_ICON;
+
+        messageDiv.innerHTML = `
+                <div class="avatar ${role}">${icon}</div>
+                <div class="message-content">${content}</div>
+            `;
+
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function showTyping() {
+        const container = document.getElementById("messagesContainer");
+        const typingDiv = document.createElement("div");
+        typingDiv.className = "message assistant";
+        typingDiv.id = "typingIndicator";
+        typingDiv.innerHTML = `
+                <div class="avatar assistant">
+                    ${ROBOT_ICON}
+                </div>
+                <div class="message-content">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+        container.appendChild(typingDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function hideTyping() {
+        const typingDiv = document.getElementById("typingIndicator");
+        if (typingDiv) typingDiv.remove();
+      }
+
+      // Navigation Logic
+      function updateBackButton() {
+        const backBtn = document.getElementById("headerBackBtn");
+        if (botState === "menu") {
+          backBtn.style.display = "none";
+        } else {
+          backBtn.style.display = "flex";
+        }
+      }
+
+      function goBack() {
+        if (botState === "answer") {
+          // Go back to options
+          const container = document.getElementById("messagesContainer");
+          // Remove the last answer and user query to clean up? Or just show options again?
+          // User requested "Back", usually implies going up a level.
+          // Let's just re-show options.
+          addMessage("user", "Back to Options");
+          botState = "detail";
+          clearOptions();
+          showOptions();
+        } else if (botState === "detail") {
+          // Go back to menu
+          addMessage("user", "Back to Menu");
+          resetChat();
+        }
+        updateBackButton();
+      }
+
+      // Menu
+      function showMenu() {
+        clearOptions();
+        botState = "menu";
+        updateBackButton();
+
+        if (!collegeData || Object.keys(collegeData).length === 0) return;
+
+        const container = document.getElementById("messagesContainer");
+        const menuDiv = document.createElement("div");
+        menuDiv.className = "topic-buttons";
+        menuDiv.id = "optionsContainer";
+
+        Object.entries(collegeData).forEach(([key, topic]) => {
+          const button = document.createElement("button");
+          button.className = "topic-button";
+          button.onclick = () => selectTopic(key);
+          const cleanTitle = topic.name.replace(/^[^\w\s]*\s*/, "");
+          button.innerHTML = `
+                    <div class="topic-icon">
+                        <i class="fi fi-rr-book-alt"></i>
+                    </div>
+                    <span>${cleanTitle}</span>
+                `;
+          menuDiv.appendChild(button);
+        });
+
+        container.appendChild(menuDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function selectTopic(topicKey) {
+        const topic = collegeData[topicKey];
+        if (!topic) return;
+
+        addMessage("user", topic.name);
+        addMessage(
+          "assistant",
+          `Great choice! Let me help you with ${topic.name}. What would you like to know?`
+        );
+
+        selectedTopic = topicKey;
+        botState = "detail";
+        updateBackButton();
+
+        clearOptions();
+        showOptions();
+      }
+
+      function showOptions() {
+        if (!selectedTopic) return;
+
+        const topic = collegeData[selectedTopic];
+        if (!topic || !topic.options) return;
+
+        const container = document.getElementById("messagesContainer");
+        const optionsDiv = document.createElement("div");
+        optionsDiv.className = "option-buttons";
+        optionsDiv.id = "optionsContainer";
+
+        // Note: Removed inline "Back to Topics" button as it's now in the header
+
+        Object.entries(topic.options)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .forEach(([key, option]) => {
+            const button = document.createElement("button");
+            button.className = "option-button";
+            button.onclick = () => selectOption(key);
+            button.innerHTML = `
+                        <div class="option-content">
+                            <div class="option-title">${option.title}</div>
+                            ${
+                              option.description
+                                ? `<div class="option-description">${option.description}</div>`
+                                : ""
+                            }
+                        </div>
+                        <i class="fi fi-rr-angle-small-right"></i>
+                    `;
+            optionsDiv.appendChild(button);
+          });
+
+        container.appendChild(optionsDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function selectOption(optionKey) {
+        if (!selectedTopic) return;
+
+        const topic = collegeData[selectedTopic];
+        const option = topic?.options[optionKey];
+        if (!option) return;
+
+        addMessage("user", `${option.title}`);
+        addMessage("assistant", option.answer);
+
+        // Note: Removed inline "Back to Options" button as it's now in the header
+
+        botState = "answer";
+        updateBackButton();
+        clearOptions();
+      }
+
+      function clearOptions() {
+        const existing = document.getElementById("optionsContainer");
+        if (existing) existing.remove();
+      }
+
+      // Reset
+      function resetChat() {
+        const container = document.getElementById("messagesContainer");
+        container.innerHTML = "";
+
+        addMessage(
+          "assistant",
+          "Back to the main menu! What would you like to explore?"
+        );
+
+        botState = "menu";
+        selectedTopic = null;
+        updateBackButton();
+        showMenu();
+      }
+
+      // Send Message (Query)
+      async function sendMessage() {
+        // Check if user is logged in before allowing message send
+        let isLoggedIn = false;
+        try {
+          isLoggedIn = await checkAuth();
+        } catch (e) {
+          console.error("Auth check error:", e);
+        }
+
+        if (!isLoggedIn) {
+          showLoginModal();
+          return;
+        }
+
+        const input = document.getElementById("messageInput");
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        if (message.toLowerCase() === "menu") {
+          resetChat();
+          input.value = "";
+          return;
+        }
+
+        // Show user message
+
+        // Clear input immediately
+        input.value = "";
+
+        // We don't show typing indicator or bot reply for queries as per request
+        // Just save to backend silently
+
+        try {
+          // Save query with logged-in username
+          const response = await fetch(`${BACKEND_URL}/queries`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              message: message,
+              user_name: "User",
+            }),
+          });
+          if (response.ok) {
+            showToast("✅ Query saved");
+          } else {
+            const err = await response.json();
+            showToast(
+              "❌ Failed to save query: " + (err.error || response.status)
+            );
+          }
+          // No bot reply requested
+        } catch (error) {
+          console.error("Send error:", error);
+          showToast("❌ Error sending query");
+        }
+      }
+
+      function toggleInput(disabled) {
+        document.getElementById("messageInput").disabled = disabled;
+        document.getElementById("sendButton").disabled = disabled;
+      }
+
+      function handleKeyPress(event) {
+        if (event.key === "Enter") {
+          sendMessage();
+        }
+      }
+
+      // Toast helper function
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        const toastMessage = document.getElementById("toastMessage");
+        toastMessage.textContent = message;
+        toast.style.display = "block";
+        setTimeout(() => {
+          toast.style.display = "none";
+        }, 3000);
+      }
+
+      // Support Modal
+      async function showSupport() {
+        const modal = document.getElementById("supportModal");
+        modal.classList.add("active");
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/contact`);
+          if (response.ok) {
+            const contact = await response.json();
+            document.getElementById("contactPhone").textContent = contact.phone;
+            document.getElementById(
+              "contactPhone"
+            ).href = `tel:${contact.phone.replace(/\s/g, "")}`;
+            document.getElementById("contactEmail").textContent = contact.email;
+            document.getElementById(
+              "contactEmail"
+            ).href = `mailto:${contact.email}`;
+            document.getElementById("contactAddress").textContent =
+              contact.address;
+          }
+        } catch (error) {
+          console.error("Error loading contact info:", error);
+        }
+      }
+
+      function closeSupport() {
+        document.getElementById("supportModal").classList.remove("active");
+      }
+
+      // Feedback Modal
+      function showFeedbackModal() {
+        document.getElementById("feedbackModal").classList.add("active");
+      }
+
+      function closeFeedbackModal() {
+        document.getElementById("feedbackModal").classList.remove("active");
+      }
+
+      async function submitFeedback(e) {
+        e.preventDefault();
+
+        const name = document.getElementById("feedbackName").value;
+        const email = document.getElementById("feedbackEmail").value;
+        const message = document.getElementById("feedbackMessage").value;
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+
+        if (!message.trim()) return;
+
+        btn.disabled = true;
+        btn.textContent = "Sending...";
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/feedback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message,
+              user_name: name,
+              user_email: email,
+            }),
+          });
+
+          if (response.ok) {
+            alert("Thank you for your feedback!");
+            closeFeedbackModal();
+            e.target.reset();
+          } else {
+            const err = await response.json();
+            alert("Error: " + (err.error || "Failed to send feedback"));
+          }
+        } catch (error) {
+          console.error("Feedback error:", error);
+          alert("Failed to connect to server.");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      }
+
+      // Login Modal Functions
+      function showLoginModal() {
+        document.getElementById("loginModal").classList.add("active");
+      }
+
+      function closeLoginModal() {
+        document.getElementById("loginModal").classList.remove("active");
+      }
+
+      async function handleLoginSubmit(event) {
+        event.preventDefault();
+        const fullName = document.getElementById("loginFullName").value;
+        const grade = document.getElementById("loginGrade").value;
+        const rollNo = document.getElementById("loginRollNo").value;
+        const email = document.getElementById("loginEmail").value;
+        const errorDiv = document.getElementById("loginError");
+        const submitBtn = document.getElementById("loginSubmitBtn");
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Saving...";
+        errorDiv.style.display = "none";
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/user/entry`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              full_name: fullName,
+              grade: grade,
+              roll_number: rollNo,
+              email: email,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            closeLoginModal();
+            document.getElementById("loginForm").reset();
+            alert("Welcome! You can now use the chatbot.");
+          } else {
+            errorDiv.textContent = data.error || "Failed to save data";
+            errorDiv.style.display = "block";
+          }
+        } catch (error) {
+          errorDiv.textContent = "Failed to connect to server";
+          errorDiv.style.display = "block";
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Continue";
+        }
+      }
+
+      function closeModalOnOutsideClick(event) {
+        if (event.target.classList.contains("modal")) {
+          event.target.classList.remove("active");
+        }
+      }
+    </script>
+    <!-- Toast Container -->
+    <div
+      id="toast"
+      class="toast"
+      style="
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: hsl(var(--primary));
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        box-shadow: var(--shadow-medium);
+        z-index: 1000;
+      "
+    >
+      <span id="toastMessage"></span>
+    </div>
+  </body>
+</html>

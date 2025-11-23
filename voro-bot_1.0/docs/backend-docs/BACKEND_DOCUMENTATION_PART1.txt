@@ -1,0 +1,223 @@
+BACKEND DOCUMENTATION - Part 1: index.js
+================================================================================
+
+FILE: index.js
+PURPOSE: This is the MAIN SERVER FILE. It starts the web server and handles all requests.
+
+================================================================================
+LINE-BY-LINE EXPLANATION
+================================================================================
+
+LINE 1: const express = require('express');
+--------
+WHAT IT DOES: Loads the Express library into our code
+SYNTAX BREAKDOWN:
+  - const: Creates a variable that cannot be changed
+  - express: The name we give to this variable
+  - require(): A Node.js function that loads external code
+  - 'express': The name of the library we want to load
+WHY: Express is a framework that makes creating web servers easy
+
+LINE 2: const cors = require('cors');
+--------
+WHAT IT DOES: Loads the CORS library
+SYNTAX: Same as line 1
+WHY: CORS (Cross-Origin Resource Sharing) allows the frontend to talk to the backend
+     Without this, browsers block requests for security
+
+LINE 3: const session = require('express-session');
+--------
+WHAT IT DOES: Loads the session management library
+WHY: Sessions remember who is logged in (like cookies)
+
+LINE 4: const path = require('path');
+--------
+WHAT IT DOES: Loads the path library
+WHY: Helps us work with file paths (like c:\folder\file.txt)
+
+LINE 5: const { initDatabase, findAnswer } = require('./database');
+--------
+WHAT IT DOES: Loads specific functions from our database.js file
+SYNTAX BREAKDOWN:
+  - { initDatabase, findAnswer }: Destructuring - pulls out specific functions
+  - './database': The dot means "current folder", loads database.js
+WHY: We need these functions to set up and query the database
+
+LINE 6: const setupAdminRoutes = require('./admin-api');
+--------
+WHAT IT DOES: Loads the admin API setup function
+WHY: Separates admin code into its own file for organization
+
+LINE 7: const { setupUserAuthRoutes, requireUserAuth } = require('./user-auth');
+--------
+WHAT IT DOES: Loads user authentication functions
+WHY: Handles user login/logout
+
+LINE 9: const app = express();
+--------
+WHAT IT DOES: Creates the main application object
+SYNTAX:
+  - express(): Calling the express function creates a new app
+  - app: We store it in a variable called "app"
+WHY: This "app" object is our entire web server
+
+LINE 10-13: app.use(cors({...}));
+--------
+WHAT IT DOES: Configures CORS settings
+SYNTAX BREAKDOWN:
+  - app.use(): Adds middleware (code that runs for every request)
+  - cors({...}): Calls cors with configuration options
+  - origin: 'http://localhost:4000': Only allow requests from this URL
+  - credentials: true: Allow cookies/sessions
+WHY: Security - only our frontend can access the backend
+
+LINE 14: app.use(express.json());
+--------
+WHAT IT DOES: Tells Express to parse JSON data
+WHY: When frontend sends data like {name: "John"}, this converts it to JavaScript objects
+
+LINE 15: app.use(express.static('public'));
+--------
+WHAT IT DOES: Serves files from the "public" folder
+WHY: HTML, CSS, images in "public" folder are automatically accessible
+     Example: public/chatbot.html becomes http://localhost:4000/chatbot.html
+
+LINE 18-27: app.use(session({...}));
+--------
+WHAT IT DOES: Sets up session management
+SYNTAX BREAKDOWN:
+  - secret: A password to encrypt session data
+  - resave: false: Don't save session if nothing changed
+  - saveUninitialized: false: Don't create session until something is stored
+  - cookie: {...}: Cookie settings
+    - secure: false: Works without HTTPS (set true in production)
+    - httpOnly: true: JavaScript can't access cookie (security)
+    - maxAge: 24 * 60 * 60 * 1000: Cookie lasts 24 hours (in milliseconds)
+WHY: Keeps users logged in
+
+LINE 29: let db = null;
+--------
+WHAT IT DOES: Creates a variable to store the database connection
+SYNTAX:
+  - let: Creates a variable that CAN be changed (unlike const)
+  - null: Empty value (no database yet)
+WHY: We'll store the database here after it initializes
+
+LINE 32-52: initDatabase().then(...).catch(...);
+--------
+WHAT IT DOES: Starts the database and then starts the server
+SYNTAX BREAKDOWN:
+  - initDatabase(): Calls the function from database.js
+  - .then(): Runs when database is ready (Promise syntax)
+  - (database) => {...}: Arrow function - receives the database
+  - db = database: Stores database in our variable
+  - .catch((err) => {...}): Runs if there's an error
+  - process.exit(1): Stops the program with error code
+WHY: Must wait for database before starting server
+
+LINE 42: const PORT = process.env.PORT || 4000;
+--------
+WHAT IT DOES: Sets the port number
+SYNTAX:
+  - process.env.PORT: Checks environment variable
+  - ||: OR operator - if no environment variable, use 4000
+WHY: Allows changing port without editing code
+
+LINE 43-47: app.listen(PORT, () => {...});
+--------
+WHAT IT DOES: Starts the web server
+SYNTAX:
+  - app.listen(): Starts listening for requests
+  - PORT: Which port to use (4000)
+  - () => {...}: Callback function that runs when server starts
+  - console.log(): Prints messages to terminal
+WHY: This actually starts the server running
+
+LINE 55-74: app.post('/api/reply', async (req, res) => {...});
+--------
+WHAT IT DOES: Creates an API endpoint for chat replies
+SYNTAX BREAKDOWN:
+  - app.post(): Handles POST requests (sending data)
+  - '/api/reply': The URL path
+  - async: This function can wait for things (await)
+  - (req, res): Request and Response objects
+    - req: Contains data sent by client
+    - res: Used to send data back
+  - req.body: The data sent by client
+  - await: Waits for database query to finish
+  - res.json(): Sends JSON response back
+WHY: When user sends a message, this finds and returns the answer
+
+LINE 77-92: app.get('/api/topics', (req, res) => {...});
+--------
+WHAT IT DOES: API endpoint to get all topics
+SYNTAX:
+  - app.get(): Handles GET requests (retrieving data)
+  - getAllTopics(db): Calls database function
+  - .then(): Runs when data is ready
+  - res.json(topics): Sends topics back to client
+WHY: Frontend needs the list of topics to show menu
+
+LINE 99-101: app.get('/', (req, res) => {...});
+--------
+WHAT IT DOES: Redirects homepage to chatbot
+SYNTAX:
+  - res.redirect(): Sends user to different page
+WHY: When someone visits http://localhost:4000/, send them to /chatbot
+
+LINE 104-106: app.get('/user/login', (req, res) => {...});
+--------
+WHAT IT DOES: Serves the user login page
+SYNTAX:
+  - res.sendFile(): Sends an HTML file
+  - path.join(): Combines folder paths safely
+  - __dirname: Current folder
+WHY: Shows the login form when user visits /user/login
+
+LINE 128-130: app.get('/chatbot', (req, res) => {...});
+--------
+WHAT IT DOES: Serves the chatbot page
+WHY: Main page where students chat
+
+LINE 133-171: app.post('/api/feedback', (req, res) => {...});
+--------
+WHAT IT DOES: Saves user feedback to database
+SYNTAX:
+  - req.body: Contains {message, user_name, user_email}
+  - req.session?.username: Gets logged-in username (? means optional)
+  - db.run(): Executes SQL INSERT command
+  - function(err): Callback when done
+  - this.lastID: The ID of the newly inserted row
+WHY: Stores feedback so admin can see it
+
+LINE 174-213: app.post('/api/queries', (req, res) => {...});
+--------
+WHAT IT DOES: Saves user queries to database
+SYNTAX: Same as feedback endpoint
+WHY: Tracks what students are asking
+
+LINE 216-222: app.get('/api/contact', (req, res) => {...});
+--------
+WHAT IT DOES: Returns contact information
+WHY: Shows phone/email in the chatbot
+
+LINE 225-231: app.get('/api/health', (req, res) => {...});
+--------
+WHAT IT DOES: Health check endpoint
+SYNTAX:
+  - new Date().toISOString(): Current time in standard format
+WHY: Lets you check if server is running
+
+================================================================================
+SUMMARY
+================================================================================
+
+index.js is the HEART of the system. It:
+1. Loads all required libraries
+2. Configures Express server
+3. Sets up sessions for login
+4. Initializes database
+5. Creates API endpoints (routes)
+6. Starts the server on port 4000
+
+Every request from the frontend comes through this file first.

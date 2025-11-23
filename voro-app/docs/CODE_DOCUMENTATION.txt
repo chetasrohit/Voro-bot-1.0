@@ -1,0 +1,39 @@
+VOROAI SYSTEM - COMPLETE CODE DOCUMENTATION
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+This documentation is split into multiple files for easier reading:
+
+1. BACKEND_DOCUMENTATION.txt - Backend server files (index.js, database.js, etc.)
+2. FRONTEND_DOCUMENTATION.txt - Frontend HTML files (chatbot.html, admin.html)
+3. PACKAGE_DOCUMENTATION.txt - Package.json and dependencies
+
+Each file contains LINE-BY-LINE explanations of:
+- What each line does
+- Syntax breakdown
+- How it works in the system
+- Why it's needed
+
+Start with BACKEND_DOCUMENTATION.txt to understand the server.
+
+================================================================================
+QUICK START GUIDE
+================================================================================
+
+The VoroAI system has 3 main parts:
+
+1. SERVER (Backend) - Node.js + Express
+   - index.js: Main server file
+   - database.js: Database operations
+   - user-auth.js: User login system
+   - admin-api.js: Admin panel API
+
+2. DATABASE - SQLite
+   - college_data.db: Stores all data
+
+3. FRONTEND (Client) - HTML + JavaScript
+   - chatbot.html: Student chat interface
+   - admin.html: Admin control panel
+
+Read the detailed files for complete explanations.

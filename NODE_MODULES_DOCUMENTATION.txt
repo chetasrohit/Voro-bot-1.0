@@ -1,0 +1,1486 @@
+================================================================================
+NODE MODULES DOCUMENTATION - VoroAI Project
+================================================================================
+Generated: 2025-11-22
+Project: VoroAI Backend
+Location: c:\voroAi\voro-app\node_modules
+Total Modules: 205 packages
+================================================================================
+
+TABLE OF CONTENTS
+================================================================================
+1. CORE DEPENDENCIES (Direct)
+2. DEV DEPENDENCIES
+3. TRANSITIVE DEPENDENCIES (Alphabetical)
+4. MODULE CATEGORIES
+
+================================================================================
+SECTION 1: CORE DEPENDENCIES (Direct Dependencies)
+================================================================================
+
+These are the main packages explicitly installed in package.json:
+
+--------------------------------------------------------------------------------
+1.1 BCRYPTJS (v3.0.3)
+--------------------------------------------------------------------------------
+Purpose: Password hashing library
+Category: Security/Authentication
+Usage in Project: Hashing user passwords before storing in database
+
+WHAT IS PASSWORD HASHING?
+Instead of storing passwords as plain text (e.g., "mypassword123"), we convert
+them into a scrambled string (e.g., "$2a$10$N9qo8uLOickgx2ZMRZoMye..."). 
+This way, even if someone steals the database, they can't see actual passwords.
+
+Key Features:
+- Pure JavaScript implementation (no C++ dependencies)
+- Secure password hashing using bcrypt algorithm
+- Salt generation (adds random data to make each hash unique)
+- Synchronous and asynchronous methods
+
+MAIN FUNCTIONS WITH SIMPLE EXPLANATIONS:
+
+1. bcrypt.hash(password, saltRounds)
+   
+   SYNTAX BREAKDOWN:
+   - bcrypt: The library object
+   - .hash(): Method to create a hash
+   - password: The plain text password (string)
+   - saltRounds: How many times to scramble (number, usually 10)
+   
+   EXAMPLE:
+   const bcrypt = require('bcryptjs');
+   const plainPassword = "mypassword123";
+   const saltRounds = 10;
+   
+   // Async version (recommended)
+   bcrypt.hash(plainPassword, saltRounds, function(err, hash) {
+     // hash is the scrambled password
+     console.log(hash); // $2a$10$N9qo8uLOickgx2ZMRZoMye...
+   });
+   
+   // Or using async/await (modern way)
+   const hash = await bcrypt.hash(plainPassword, saltRounds);
+   
+   WHAT HAPPENS:
+   - Takes your password "mypassword123"
+   - Scrambles it 10 times (saltRounds = 10)
+   - Returns something like: "$2a$10$N9qo8uLOickgx2ZMRZoMye..."
+   - This scrambled version is saved in the database
+
+2. bcrypt.compare(password, hash)
+   
+   SYNTAX BREAKDOWN:
+   - bcrypt: The library object
+   - .compare(): Method to check if password matches hash
+   - password: The plain text password user entered (string)
+   - hash: The scrambled password from database (string)
+   
+   EXAMPLE:
+   const userEnteredPassword = "mypassword123";
+   const hashFromDatabase = "$2a$10$N9qo8uLOickgx2ZMRZoMye...";
+   
+   // Check if password is correct
+   bcrypt.compare(userEnteredPassword, hashFromDatabase, function(err, result) {
+     if (result === true) {
+       console.log("Password is correct!");
+     } else {
+       console.log("Wrong password!");
+     }
+   });
+   
+   // Or using async/await
+   const isMatch = await bcrypt.compare(userEnteredPassword, hashFromDatabase);
+   if (isMatch) {
+     console.log("Login successful!");
+   }
+   
+   WHAT HAPPENS:
+   - Takes the password user typed in
+   - Compares it with the hash from database
+   - Returns true if they match, false if they don't
+
+3. bcrypt.genSalt(rounds)
+   
+   SYNTAX BREAKDOWN:
+   - bcrypt: The library object
+   - .genSalt(): Method to generate salt (random data)
+   - rounds: How complex the salt should be (number)
+   
+   EXAMPLE:
+   bcrypt.genSalt(10, function(err, salt) {
+     console.log(salt); // Random salt value
+     bcrypt.hash("mypassword", salt, function(err, hash) {
+       console.log(hash); // Final hash
+     });
+   });
+   
+   NOTE: Usually you don't need this - bcrypt.hash() does it automatically!
+
+REAL-WORLD USAGE IN YOUR PROJECT:
+
+// When user signs up:
+app.post('/signup', async (req, res) => {
+  const password = req.body.password;  // User's password from form
+  const hashedPassword = await bcrypt.hash(password, 10);  // Scramble it
+  
+  // Save hashedPassword to database, NOT the original password
+  db.run("INSERT INTO users (username, password) VALUES (?, ?)", 
+         [username, hashedPassword]);
+});
+
+// When user logs in:
+app.post('/login', async (req, res) => {
+  const password = req.body.password;  // Password user typed
+  
+  // Get hashed password from database
+  db.get("SELECT password FROM users WHERE username = ?", [username], 
+    async (err, user) => {
+      // Compare typed password with stored hash
+      const isCorrect = await bcrypt.compare(password, user.password);
+      
+      if (isCorrect) {
+        res.send("Login successful!");
+      } else {
+        res.send("Wrong password!");
+      }
+    });
+});
+
+SECURITY NOTES:
+- Uses adaptive hashing (computational cost increases over time)
+- Resistant to rainbow table attacks (pre-computed hash databases)
+- Industry-standard for password storage
+- Never store plain text passwords!
+- Higher saltRounds = more secure but slower (10 is good balance)
+
+--------------------------------------------------------------------------------
+1.2 CORS (v2.8.5)
+--------------------------------------------------------------------------------
+Purpose: Cross-Origin Resource Sharing middleware
+Category: Security/HTTP
+Usage in Project: Allow frontend to communicate with backend API
+
+WHAT IS CORS?
+Imagine your frontend runs on http://localhost:3000 and your backend runs on
+http://localhost:5000. By default, browsers BLOCK requests between different
+addresses for security. CORS is like a permission slip that says "it's okay!"
+
+Key Features:
+- Enable CORS with various options
+- Configure allowed origins, methods, headers
+- Preflight request handling (browser checks if request is allowed)
+- Credentials support (cookies, authentication)
+
+BASIC USAGE WITH SIMPLE EXPLANATIONS:
+
+1. Simple CORS (Allow All)
+   
+   SYNTAX:
+   const cors = require('cors');
+   app.use(cors());
+   
+   WHAT IT DOES:
+   - Allows ANY website to access your API
+   - Good for: Public APIs, development
+   - Bad for: Production (too permissive)
+   
+   EXAMPLE:
+   const express = require('express');
+   const cors = require('cors');
+   const app = express();
+   
+   app.use(cors());  // Enable CORS for all routes
+   
+   app.get('/api/data', (req, res) => {
+     res.json({ message: 'This can be accessed from anywhere!' });
+   });
+
+2. CORS with Specific Origin
+   
+   SYNTAX:
+   app.use(cors({
+     origin: 'http://localhost:3000'
+   }));
+   
+   WHAT IT DOES:
+   - Only allows requests from http://localhost:3000
+   - Blocks all other websites
+   - Good for: Production with known frontend
+   
+   EXAMPLE:
+   app.use(cors({
+     origin: 'http://localhost:3000'  // Only this website can access
+   }));
+
+3. CORS with Multiple Origins
+   
+   SYNTAX:
+   app.use(cors({
+     origin: ['http://localhost:3000', 'https://myapp.com']
+   }));
+   
+   WHAT IT DOES:
+   - Allows requests from multiple specific websites
+   - Good for: Multiple frontends (dev + production)
+   
+   EXAMPLE:
+   const allowedOrigins = [
+     'http://localhost:3000',      // Development
+     'https://myapp.com',          // Production
+     'https://www.myapp.com'       // Production with www
+   ];
+   
+   app.use(cors({
+     origin: allowedOrigins
+   }));
+
+4. CORS with Credentials (Cookies/Sessions)
+   
+   SYNTAX:
+   app.use(cors({
+     origin: 'http://localhost:3000',
+     credentials: true
+   }));
+   
+   WHAT IT DOES:
+   - Allows cookies and authentication headers
+   - Required for: Login sessions, authentication
+   
+   EXAMPLE:
+   app.use(cors({
+     origin: 'http://localhost:3000',
+     credentials: true  // Allow cookies to be sent
+   }));
+   
+   // Frontend must also include credentials:
+   // fetch('http://localhost:5000/api', { credentials: 'include' })
+
+5. CORS with Specific Methods
+   
+   SYNTAX:
+   app.use(cors({
+     methods: ['GET', 'POST']
+   }));
+   
+   WHAT IT DOES:
+   - Only allows specific HTTP methods
+   - Blocks PUT, DELETE, etc.
+   
+   EXAMPLE:
+   app.use(cors({
+     origin: 'http://localhost:3000',
+     methods: ['GET', 'POST'],  // Only allow GET and POST
+     allowedHeaders: ['Content-Type', 'Authorization']
+   }));
+
+CONFIGURATION OPTIONS EXPLAINED:
+
+- origin: Which websites can access your API
+  * String: 'http://localhost:3000'
+  * Array: ['http://localhost:3000', 'https://myapp.com']
+  * Function: Custom logic to allow/deny
+  * true: Allow all (not recommended for production)
+
+- methods: Which HTTP methods are allowed
+  * Default: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE']
+  * Example: ['GET', 'POST'] (only allow these two)
+
+- credentials: Allow cookies and auth headers
+  * true: Allow cookies/sessions
+  * false: Block cookies (default)
+
+- allowedHeaders: Which headers can be sent
+  * Example: ['Content-Type', 'Authorization']
+
+- maxAge: How long browser can cache CORS check
+  * Number in seconds
+  * Example: 86400 (24 hours)
+
+REAL-WORLD USAGE IN YOUR PROJECT:
+
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+// Development: Allow localhost frontend
+if (process.env.NODE_ENV === 'development') {
+  app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true  // Allow session cookies
+  }));
+}
+
+// Production: Allow only your domain
+if (process.env.NODE_ENV === 'production') {
+  app.use(cors({
+    origin: 'https://myapp.com',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  }));
+}
+
+SECURITY NOTES:
+- Never use cors() with no options in production (allows everyone!)
+- Always specify origin in production
+- Use credentials: true only if you need sessions/cookies
+- Be specific with allowed methods and headers
+- CORS is a browser security feature (doesn't protect against server-to-server)
+
+--------------------------------------------------------------------------------
+1.3 EXPRESS (v5.1.0)
+--------------------------------------------------------------------------------
+Purpose: Web application framework
+Category: Web Framework
+Usage in Project: Core backend server framework
+
+WHAT IS EXPRESS?
+Express is like a waiter in a restaurant. When someone (browser) makes a request
+("I want the menu"), Express takes that request, processes it, and sends back
+a response ("Here's the menu"). It makes building web servers super easy!
+
+Key Features:
+- Routing system (handle different URLs)
+- Middleware support (process requests step-by-step)
+- Template engine integration (generate HTML)
+- Static file serving (serve images, CSS, JS)
+- Request/response handling (receive and send data)
+
+BASIC SETUP WITH SIMPLE EXPLANATIONS:
+
+1. Creating a Server
+   
+   SYNTAX BREAKDOWN:
+   const express = require('express');  // Import Express
+   const app = express();               // Create app instance
+   
+   EXAMPLE:
+   const express = require('express');
+   const app = express();
+   const PORT = 3000;
+   
+   // Start the server
+   app.listen(PORT, () => {
+     console.log(`Server running on http://localhost:${PORT}`);
+   });
+   
+   WHAT HAPPENS:
+   - Creates a web server
+   - Listens on port 3000
+   - Now you can visit http://localhost:3000
+
+2. Creating Routes (Handling URLs)
+   
+   SYNTAX:
+   app.METHOD(PATH, HANDLER)
+   
+   - app: Your Express application
+   - METHOD: HTTP method (get, post, put, delete)
+   - PATH: URL path (string)
+   - HANDLER: Function to run (req, res) => {}
+   
+   EXAMPLE - Simple GET Route:
+   app.get('/', (req, res) => {
+     res.send('Hello World!');
+   });
+   
+   BREAKDOWN:
+   - app.get: Handle GET requests
+   - '/': Root URL (homepage)
+   - (req, res): Request and Response objects
+   - res.send(): Send response back to browser
+   
+   When user visits http://localhost:3000/, they see "Hello World!"
+   
+   EXAMPLE - Multiple Routes:
+   // Homepage
+   app.get('/', (req, res) => {
+     res.send('Welcome to homepage!');
+   });
+   
+   // About page
+   app.get('/about', (req, res) => {
+     res.send('About us page');
+   });
+   
+   // Contact page
+   app.get('/contact', (req, res) => {
+     res.send('Contact us page');
+   });
+
+3. Request Object (req) - Getting Data FROM User
+   
+   a) URL Parameters (req.params)
+      
+      SYNTAX:
+      app.get('/users/:id', (req, res) => {
+        const userId = req.params.id;
+      });
+      
+      EXAMPLE:
+      app.get('/users/:id', (req, res) => {
+        const userId = req.params.id;
+        res.send(`User ID is: ${userId}`);
+      });
+      
+      WHAT HAPPENS:
+      - User visits: http://localhost:3000/users/123
+      - req.params.id = "123"
+      - Response: "User ID is: 123"
+      
+      Multiple parameters:
+      app.get('/users/:userId/posts/:postId', (req, res) => {
+        const userId = req.params.userId;    // "123"
+        const postId = req.params.postId;    // "456"
+        res.send(`User ${userId}, Post ${postId}`);
+      });
+      // URL: /users/123/posts/456
+   
+   b) Query Parameters (req.query)
+      
+      SYNTAX:
+      app.get('/search', (req, res) => {
+        const searchTerm = req.query.q;
+      });
+      
+      EXAMPLE:
+      app.get('/search', (req, res) => {
+        const query = req.query.q;
+        const page = req.query.page || 1;
+        res.send(`Searching for: ${query}, Page: ${page}`);
+      });
+      
+      WHAT HAPPENS:
+      - User visits: http://localhost:3000/search?q=javascript&page=2
+      - req.query.q = "javascript"
+      - req.query.page = "2"
+      - Response: "Searching for: javascript, Page: 2"
+   
+   c) Request Body (req.body)
+      
+      SYNTAX:
+      app.use(express.json());  // Required first!
+      
+      app.post('/login', (req, res) => {
+        const username = req.body.username;
+        const password = req.body.password;
+      });
+      
+      EXAMPLE:
+      // Enable JSON parsing
+      app.use(express.json());
+      
+      app.post('/login', (req, res) => {
+        const username = req.body.username;
+        const password = req.body.password;
+        
+        console.log(`User: ${username}, Pass: ${password}`);
+        res.json({ message: 'Login received' });
+      });
+      
+      WHAT HAPPENS:
+      - Frontend sends: { "username": "john", "password": "secret" }
+      - req.body.username = "john"
+      - req.body.password = "secret"
+   
+   d) Headers (req.headers)
+      
+      EXAMPLE:
+      app.get('/api/data', (req, res) => {
+        const authToken = req.headers.authorization;
+        const userAgent = req.headers['user-agent'];
+        
+        console.log(`Token: ${authToken}`);
+        console.log(`Browser: ${userAgent}`);
+      });
+
+4. Response Object (res) - Sending Data TO User
+   
+   a) res.send() - Send any data
+      
+      EXAMPLE:
+      app.get('/text', (req, res) => {
+        res.send('Plain text response');
+      });
+      
+      app.get('/html', (req, res) => {
+        res.send('<h1>HTML response</h1>');
+      });
+   
+   b) res.json() - Send JSON data
+      
+      EXAMPLE:
+      app.get('/api/user', (req, res) => {
+        const user = {
+          id: 1,
+          name: 'John Doe',
+          email: 'john@example.com'
+        };
+        res.json(user);
+      });
+      
+      WHAT HAPPENS:
+      - Automatically sets Content-Type: application/json
+      - Converts JavaScript object to JSON string
+      - Browser receives: {"id":1,"name":"John Doe","email":"john@example.com"}
+   
+   c) res.status() - Set HTTP status code
+      
+      EXAMPLE:
+      app.get('/api/user/:id', (req, res) => {
+        const user = findUser(req.params.id);
+        
+        if (!user) {
+          res.status(404).json({ error: 'User not found' });
+        } else {
+          res.status(200).json(user);
+        }
+      });
+      
+      COMMON STATUS CODES:
+      - 200: OK (success)
+      - 201: Created (new resource created)
+      - 400: Bad Request (invalid data)
+      - 401: Unauthorized (not logged in)
+      - 403: Forbidden (no permission)
+      - 404: Not Found
+      - 500: Server Error
+   
+   d) res.redirect() - Redirect to another URL
+      
+      EXAMPLE:
+      app.get('/old-page', (req, res) => {
+        res.redirect('/new-page');
+      });
+      
+      app.post('/login', (req, res) => {
+        // After successful login
+        res.redirect('/dashboard');
+      });
+
+5. Middleware - Processing Requests Step-by-Step
+   
+   WHAT IS MIDDLEWARE?
+   Think of it like airport security checkpoints. Each checkpoint (middleware)
+   checks something, then passes you to the next checkpoint.
+   
+   SYNTAX:
+   app.use((req, res, next) => {
+     // Do something
+     next();  // Pass to next middleware
+   });
+   
+   EXAMPLE - Logging Middleware:
+   app.use((req, res, next) => {
+     console.log(`${req.method} ${req.url}`);
+     next();  // IMPORTANT: Call next() to continue!
+   });
+   
+   app.get('/', (req, res) => {
+     res.send('Homepage');
+   });
+   
+   WHAT HAPPENS:
+   1. Request comes in for '/'
+   2. Logging middleware runs first (logs "GET /")
+   3. next() is called
+   4. Route handler runs (sends "Homepage")
+   
+   EXAMPLE - Authentication Middleware:
+   function checkAuth(req, res, next) {
+     if (req.session.userId) {
+       next();  // User is logged in, continue
+     } else {
+       res.status(401).send('Please login first');
+       // Don't call next() - stop here!
+     }
+   }
+   
+   // Public route (no auth needed)
+   app.get('/', (req, res) => {
+     res.send('Public homepage');
+   });
+   
+   // Protected route (auth required)
+   app.get('/dashboard', checkAuth, (req, res) => {
+     res.send('Private dashboard');
+   });
+   
+   BUILT-IN MIDDLEWARE:
+   app.use(express.json());              // Parse JSON bodies
+   app.use(express.urlencoded({ extended: true }));  // Parse form data
+   app.use(express.static('public'));    // Serve static files
+
+6. Routing Patterns
+   
+   a) Basic Routes:
+      app.get('/users', getAllUsers);
+      app.post('/users', createUser);
+      app.put('/users/:id', updateUser);
+      app.delete('/users/:id', deleteUser);
+   
+   b) Route Chaining:
+      app.route('/users')
+        .get(getAllUsers)
+        .post(createUser);
+      
+      app.route('/users/:id')
+        .get(getUser)
+        .put(updateUser)
+        .delete(deleteUser);
+   
+   c) Express Router (Modular Routes):
+      
+      // userRoutes.js
+      const express = require('express');
+      const router = express.Router();
+      
+      router.get('/', getAllUsers);
+      router.post('/', createUser);
+      router.get('/:id', getUser);
+      
+      module.exports = router;
+      
+      // index.js
+      const userRoutes = require('./userRoutes');
+      app.use('/api/users', userRoutes);
+      
+      RESULT:
+      - GET /api/users → getAllUsers
+      - POST /api/users → createUser
+      - GET /api/users/123 → getUser
+
+COMPLETE EXAMPLE - Putting It All Together:
+
+const express = require('express');
+const app = express();
+
+// Middleware
+app.use(express.json());  // Parse JSON
+
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+// Routes
+app.get('/', (req, res) => {
+  res.send('Welcome to my API!');
+});
+
+app.get('/users/:id', (req, res) => {
+  const userId = req.params.id;
+  res.json({ id: userId, name: 'John Doe' });
+});
+
+app.post('/users', (req, res) => {
+  const newUser = req.body;
+  console.log('Creating user:', newUser);
+  res.status(201).json({ message: 'User created', user: newUser });
+});
+
+// 404 handler (must be last!)
+app.use((req, res) => {
+  res.status(404).send('Page not found');
+});
+
+// Start server
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+
+--------------------------------------------------------------------------------
+1.4 EXPRESS-SESSION (v1.18.2)
+--------------------------------------------------------------------------------
+Purpose: Session management middleware
+Category: Authentication/State Management
+Usage in Project: Maintain user login sessions
+
+WHAT ARE SESSIONS?
+Imagine you log into a website. How does it remember you're logged in when you
+go to different pages? That's sessions! It's like getting a wristband at a
+theme park - the wristband proves you paid, so you don't need to pay again
+at each ride.
+
+Key Features:
+- Server-side session storage (data stored on server, not browser)
+- Session ID generation (unique ID for each user)
+- Cookie-based session tracking (browser stores session ID)
+- Multiple storage backends (memory, database, Redis)
+
+BASIC SETUP WITH SIMPLE EXPLANATIONS:
+
+1. Installing and Configuring Express-Session
+   
+   SYNTAX:
+   const session = require('express-session');
+   
+   app.use(session({
+     secret: 'your-secret-key',
+     resave: false,
+     saveUninitialized: false
+   }));
+   
+   EXAMPLE:
+   const express = require('express');
+   const session = require('express-session');
+   const app = express();
+   
+   // Configure session middleware
+   app.use(session({
+     secret: 'my-super-secret-key-12345',  // Used to sign session ID
+     resave: false,              // Don't save if nothing changed
+     saveUninitialized: false,   // Don't save empty sessions
+     cookie: {
+       maxAge: 1000 * 60 * 60 * 24  // 24 hours in milliseconds
+     }
+   }));
+   
+   WHAT HAPPENS:
+   - Creates session middleware
+   - Generates unique session ID for each visitor
+   - Stores session ID in cookie
+   - Session data stored on server
+
+2. Configuration Options Explained
+   
+   a) secret (REQUIRED)
+      
+      WHAT IT IS:
+      A string used to sign the session ID cookie (prevents tampering)
+      
+      EXAMPLE:
+      secret: 'keyboard-cat-12345'
+      
+      IMPORTANT:
+      - Keep this secret! Don't share it!
+      - Use a long, random string
+      - Different for each environment (dev, production)
+      - If someone knows your secret, they can fake sessions!
+   
+   b) resave
+      
+      WHAT IT IS:
+      Should session be saved even if it wasn't modified?
+      
+      VALUES:
+      - false (recommended): Only save if session changed
+      - true: Save on every request (slower, unnecessary)
+      
+      EXAMPLE:
+      resave: false  // Only save when needed
+   
+   c) saveUninitialized
+      
+      WHAT IT IS:
+      Should we save a session that's new but has no data?
+      
+      VALUES:
+      - false (recommended): Don't save empty sessions
+      - true: Save all sessions, even empty ones
+      
+      EXAMPLE:
+      saveUninitialized: false  // Don't save empty sessions
+      
+      WHY FALSE?
+      - Saves server storage
+      - Better for GDPR compliance
+      - Only create session when user logs in
+   
+   d) cookie
+      
+      WHAT IT IS:
+      Settings for the session cookie
+      
+      EXAMPLE:
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24,  // 24 hours (in milliseconds)
+        httpOnly: true,                // Can't access via JavaScript
+        secure: false,                 // true = HTTPS only
+        sameSite: 'lax'               // CSRF protection
+      }
+      
+      OPTIONS EXPLAINED:
+      - maxAge: How long until cookie expires (milliseconds)
+        * 1000 = 1 second
+        * 1000 * 60 = 1 minute
+        * 1000 * 60 * 60 = 1 hour
+        * 1000 * 60 * 60 * 24 = 1 day
+      
+      - httpOnly: Prevents JavaScript from accessing cookie
+        * true = More secure (recommended)
+        * false = JavaScript can read cookie (risky!)
+      
+      - secure: Only send cookie over HTTPS
+        * true = Production (with HTTPS)
+        * false = Development (HTTP is okay)
+      
+      - sameSite: Protects against CSRF attacks
+        * 'strict': Very strict (may break some features)
+        * 'lax': Balanced (recommended)
+        * 'none': No protection (not recommended)
+
+3. Using Sessions - Storing Data
+   
+   SYNTAX:
+   req.session.propertyName = value;
+   
+   EXAMPLE - Login System:
+   app.post('/login', (req, res) => {
+     const { username, password } = req.body;
+     
+     // Check username and password (simplified)
+     if (username === 'john' && password === 'secret') {
+       // Store user info in session
+       req.session.userId = 123;
+       req.session.username = 'john';
+       req.session.isLoggedIn = true;
+       
+       res.json({ message: 'Login successful!' });
+     } else {
+       res.status(401).json({ error: 'Invalid credentials' });
+     }
+   });
+   
+   WHAT HAPPENS:
+   - User sends username and password
+   - If correct, we store data in req.session
+   - Session data is saved on server
+   - Browser gets session ID cookie
+   - On next request, browser sends cookie automatically
+
+4. Using Sessions - Reading Data
+   
+   SYNTAX:
+   const value = req.session.propertyName;
+   
+   EXAMPLE - Check if User is Logged In:
+   app.get('/dashboard', (req, res) => {
+     // Check if user is logged in
+     if (req.session.isLoggedIn) {
+       res.send(`Welcome back, ${req.session.username}!`);
+     } else {
+       res.status(401).send('Please login first');
+     }
+   });
+   
+   WHAT HAPPENS:
+   - Browser sends session ID cookie
+   - Express-session finds session data on server
+   - We can access req.session.isLoggedIn
+   - If true, user is logged in!
+
+5. Destroying Sessions - Logout
+   
+   SYNTAX:
+   req.session.destroy(callback);
+   
+   EXAMPLE:
+   app.post('/logout', (req, res) => {
+     req.session.destroy((err) => {
+       if (err) {
+         res.status(500).json({ error: 'Logout failed' });
+       } else {
+        res.json({ message: 'Logged out successfully' });
+       }
+     });
+   });
+   
+   WHAT HAPPENS:
+   - Deletes all session data from server
+   - User is logged out
+   - Next request will create new session
+
+6. Regenerating Session ID
+   
+   SYNTAX:
+   req.session.regenerate(callback);
+   
+   EXAMPLE - After Login (Security Best Practice):
+   app.post('/login', (req, res) => {
+     const { username, password } = req.body;
+     
+     if (checkCredentials(username, password)) {
+       // Create new session ID (prevents session fixation attacks)
+       req.session.regenerate((err) => {
+         if (err) {
+           return res.status(500).json({ error: 'Login error' });
+         }
+         
+         // Now store user data
+         req.session.userId = 123;
+         req.session.username = username;
+         
+         res.json({ message: 'Login successful' });
+       });
+     }
+   });
+   
+   WHY REGENERATE?
+   - Security: Prevents session fixation attacks
+   - Best practice: Always regenerate after login
+
+COMPLETE REAL-WORLD EXAMPLE:
+
+const express = require('express');
+const session = require('express-session');
+const app = express();
+
+app.use(express.json());
+
+// Configure sessions
+app.use(session({
+  secret: 'my-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24,  // 24 hours
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production'  // HTTPS in production
+  }
+}));
+
+// Middleware to check if logged in
+function requireLogin(req, res, next) {
+  if (req.session.userId) {
+    next();  // User is logged in, continue
+  } else {
+    res.status(401).json({ error: 'Please login first' });
+  }
+}
+
+// Public route
+app.get('/', (req, res) => {
+  res.send('Welcome! Please login.');
+});
+
+// Login route
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  // In real app, check against database
+  if (username === 'john' && password === 'secret') {
+    req.session.regenerate((err) => {
+      if (err) return res.status(500).json({ error: 'Error' });
+      
+      req.session.userId = 123;
+      req.session.username = username;
+      
+      res.json({ message: 'Login successful!' });
+    });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+// Protected route (requires login)
+app.get('/dashboard', requireLogin, (req, res) => {
+  res.json({
+    message: `Welcome ${req.session.username}!`,
+    userId: req.session.userId
+  });
+});
+
+// Logout route
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      res.status(500).json({ error: 'Logout failed' });
+    } else {
+      res.json({ message: 'Logged out successfully' });
+    }
+  });
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+
+STORAGE OPTIONS:
+
+1. MemoryStore (Default - Development Only)
+   
+   WHAT IT IS:
+   Sessions stored in server memory (RAM)
+   
+   PROS:
+   - Easy, no setup needed
+   - Fast
+   
+   CONS:
+   - Lost when server restarts
+   - Doesn't work with multiple servers
+   - Memory leaks possible
+   
+   USAGE:
+   // Default, no extra config needed
+   app.use(session({ secret: 'key' }));
+
+2. Database Storage (Production)
+   
+   For production, use external storage like:
+   - connect-sqlite3: SQLite database
+   - connect-redis: Redis (fast, popular)
+   - connect-mongo: MongoDB
+   
+   EXAMPLE with SQLite:
+   const SQLiteStore = require('connect-sqlite3')(session);
+   
+   app.use(session({
+     store: new SQLiteStore({
+       db: 'sessions.db',
+       dir: './data'
+     }),
+     secret: 'my-secret',
+     resave: false,
+     saveUninitialized: false
+   }));
+
+SECURITY BEST PRACTICES:
+
+1. Use a strong, random secret
+   - Bad: secret: '123'
+   - Good: secret: 'kj3h4k2j3h4kjh23k4jh23k4jh'
+
+2. Set httpOnly: true
+   - Prevents XSS attacks
+
+3. Set secure: true in production
+   - Only send cookies over HTTPS
+
+4. Regenerate session after login
+   - Prevents session fixation
+
+5. Set reasonable maxAge
+   - Don't make sessions last forever
+   - 24 hours is common
+
+6. Use external storage in production
+   - Don't use MemoryStore
+   - Use Redis or database
+
+--------------------------------------------------------------------------------
+1.5 SQLITE3 (v5.1.7)
+--------------------------------------------------------------------------------
+Purpose: SQLite database driver
+Category: Database
+Usage in Project: Store user data, queries, feedback
+
+Key Features:
+- Embedded SQL database
+- No separate server process
+- File-based storage
+- ACID compliant
+- Full SQL support
+
+Core API:
+
+1. Database Connection:
+   const db = new sqlite3.Database('file.db', callback)
+   - sqlite3.OPEN_READWRITE: Read/write mode
+   - sqlite3.OPEN_CREATE: Create if doesn't exist
+   - sqlite3.OPEN_READONLY: Read-only mode
+
+2. Query Methods:
+   
+   a) db.run(sql, params, callback):
+      - Execute INSERT, UPDATE, DELETE
+      - Returns: this.lastID, this.changes
+      - Example: db.run("INSERT INTO users VALUES (?, ?)", [name, email])
+   
+   b) db.get(sql, params, callback):
+      - Fetch single row
+      - Returns: row object or undefined
+      - Example: db.get("SELECT * FROM users WHERE id = ?", [id])
+   
+   c) db.all(sql, params, callback):
+      - Fetch all matching rows
+      - Returns: array of row objects
+      - Example: db.all("SELECT * FROM users")
+   
+   d) db.each(sql, params, rowCallback, completeCallback):
+      - Process rows one at a time
+      - Memory efficient for large results
+
+3. Prepared Statements:
+   const stmt = db.prepare("INSERT INTO users VALUES (?, ?)")
+   stmt.run(name, email)
+   stmt.finalize()
+
+4. Transactions:
+   db.serialize(() => {
+     db.run("BEGIN TRANSACTION")
+     db.run("INSERT ...")
+     db.run("UPDATE ...")
+     db.run("COMMIT")
+   })
+
+5. Error Handling:
+   - Callback receives (err, result)
+   - Check err before processing result
+
+Database Schema in VoroAI:
+- users: User accounts
+- queries: User queries/messages
+- feedback: User feedback
+- admin_users: Admin accounts
+
+Best Practices:
+- Use parameterized queries (prevent SQL injection)
+- Close database connections: db.close()
+- Use db.serialize() for sequential operations
+- Use db.parallelize() for concurrent operations
+
+================================================================================
+SECTION 2: DEV DEPENDENCIES
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 NODEMON (v3.1.11)
+--------------------------------------------------------------------------------
+Purpose: Development server auto-restart
+Category: Development Tool
+Usage in Project: Automatically restart server on file changes
+
+Key Features:
+- Monitor files for changes
+- Auto-restart Node.js application
+- Configurable file watching
+- Ignore specific files/folders
+
+Usage:
+- npm run dev (runs: nodemon index.js)
+- Watches .js, .json files by default
+- Ignores node_modules automatically
+
+Configuration (nodemon.json):
+- watch: Directories to watch
+- ignore: Files/folders to ignore
+- ext: File extensions to monitor
+- delay: Delay before restart
+
+Benefits:
+- Faster development workflow
+- No manual server restarts
+- Immediate feedback on code changes
+
+================================================================================
+SECTION 3: TRANSITIVE DEPENDENCIES (Key Modules)
+================================================================================
+
+These are automatically installed as dependencies of the core packages:
+
+--------------------------------------------------------------------------------
+3.1 BODY-PARSER
+--------------------------------------------------------------------------------
+Purpose: Parse incoming request bodies
+Category: Middleware
+Used By: Express
+
+Features:
+- Parse JSON payloads
+- Parse URL-encoded data
+- Parse raw/text bodies
+- Configurable size limits
+
+Usage in Express:
+- app.use(express.json()): Parse JSON
+- app.use(express.urlencoded({extended: true})): Parse forms
+
+--------------------------------------------------------------------------------
+3.2 COOKIE & COOKIE-SIGNATURE
+--------------------------------------------------------------------------------
+Purpose: Cookie parsing and signing
+Category: HTTP/Security
+Used By: Express, Express-Session
+
+Features:
+- Parse Cookie header
+- Serialize cookies
+- Sign cookies for tampering detection
+- Verify signed cookies
+
+--------------------------------------------------------------------------------
+3.3 DEBUG
+--------------------------------------------------------------------------------
+Purpose: Debugging utility
+Category: Development
+Used By: Express, many others
+
+Features:
+- Namespace-based logging
+- Conditional output via DEBUG env variable
+- Color-coded output
+- Timestamp support
+
+Usage:
+- DEBUG=express:* node index.js
+
+--------------------------------------------------------------------------------
+3.4 DEPD
+--------------------------------------------------------------------------------
+Purpose: Deprecation warnings
+Category: Development
+Used By: Express
+
+Features:
+- Mark functions/properties as deprecated
+- Track deprecation usage
+- Provide upgrade paths
+
+--------------------------------------------------------------------------------
+3.5 FINALHANDLER
+--------------------------------------------------------------------------------
+Purpose: Final request handler
+Category: Middleware
+Used By: Express
+
+Features:
+- Handle unhandled requests
+- Send 404 responses
+- Error handling fallback
+
+--------------------------------------------------------------------------------
+3.6 HTTP-ERRORS
+--------------------------------------------------------------------------------
+Purpose: Create HTTP error objects
+Category: Error Handling
+Used By: Express
+
+Features:
+- Generate error objects with status codes
+- Standardized error format
+- Stack trace support
+
+Usage:
+- createError(404, 'Not Found')
+- createError.NotFound()
+
+--------------------------------------------------------------------------------
+3.7 MIME-TYPES & MIME-DB
+--------------------------------------------------------------------------------
+Purpose: MIME type lookup
+Category: HTTP
+Used By: Express, Send
+
+Features:
+- Map file extensions to MIME types
+- Content-Type header generation
+- Comprehensive MIME database
+
+--------------------------------------------------------------------------------
+3.8 QS
+--------------------------------------------------------------------------------
+Purpose: Query string parsing
+Category: HTTP
+Used By: Express
+
+Features:
+- Parse query strings
+- Stringify objects to query strings
+- Nested object support
+- Array handling
+
+--------------------------------------------------------------------------------
+3.9 RANGE-PARSER
+--------------------------------------------------------------------------------
+Purpose: Parse Range header
+Category: HTTP
+Used By: Express, Send
+
+Features:
+- Parse HTTP Range requests
+- Support partial content delivery
+- Video/audio streaming support
+
+--------------------------------------------------------------------------------
+3.10 RAW-BODY
+--------------------------------------------------------------------------------
+Purpose: Get raw request body
+Category: Middleware
+Used By: Body-Parser
+
+Features:
+- Read request stream
+- Encoding support
+- Size limits
+- Error handling
+
+--------------------------------------------------------------------------------
+3.11 SAFE-BUFFER
+--------------------------------------------------------------------------------
+Purpose: Safe Buffer API
+Category: Utility
+Used By: Many modules
+
+Features:
+- Safer Buffer constructor
+- Prevent security issues
+- Backward compatibility
+
+--------------------------------------------------------------------------------
+3.12 SEND & SERVE-STATIC
+--------------------------------------------------------------------------------
+Purpose: Static file serving
+Category: HTTP
+Used By: Express
+
+Features:
+- Stream files to response
+- ETag generation
+- Conditional GET support
+- Range request support
+- MIME type detection
+
+--------------------------------------------------------------------------------
+3.13 SETPROTOTYPEOF
+--------------------------------------------------------------------------------
+Purpose: Set object prototype
+Category: Utility
+Used By: HTTP-Errors
+
+Features:
+- Cross-platform prototype setting
+- Performance optimized
+
+--------------------------------------------------------------------------------
+3.14 STATUSES
+--------------------------------------------------------------------------------
+Purpose: HTTP status codes
+Category: HTTP
+Used By: Express, HTTP-Errors
+
+Features:
+- Status code to message mapping
+- Message to code lookup
+- Redirect/error/success categorization
+
+--------------------------------------------------------------------------------
+3.15 TYPE-IS
+--------------------------------------------------------------------------------
+Purpose: Content-Type checking
+Category: HTTP
+Used By: Body-Parser
+
+Features:
+- Check request Content-Type
+- MIME type matching
+- Wildcard support
+
+--------------------------------------------------------------------------------
+3.16 VARY
+--------------------------------------------------------------------------------
+Purpose: Vary header management
+Category: HTTP
+Used By: Express, CORS
+
+Features:
+- Manage Vary header
+- Cache control
+- Content negotiation
+
+================================================================================
+SECTION 4: MODULE CATEGORIES
+================================================================================
+
+4.1 SECURITY MODULES
+--------------------
+- bcryptjs: Password hashing
+- cors: Cross-origin security
+- cookie-signature: Cookie signing
+- uid-safe: Secure UID generation
+- random-bytes: Cryptographic random bytes
+
+4.2 HTTP/WEB MODULES
+--------------------
+- express: Web framework
+- body-parser: Request parsing
+- cookie: Cookie handling
+- mime-types: MIME type detection
+- content-type: Content-Type parsing
+- range-parser: Range request handling
+- proxy-addr: Proxy address parsing
+- forwarded: Forwarded header parsing
+- ipaddr.js: IP address utilities
+
+4.3 DATABASE MODULES
+--------------------
+- sqlite3: SQLite driver
+- bindings: Native addon loading
+- node-addon-api: Native addon API
+- node-gyp: Native compilation
+
+4.4 SESSION/STATE MODULES
+-------------------------
+- express-session: Session management
+- on-headers: Header manipulation
+- on-finished: Request completion detection
+
+4.5 FILE SYSTEM MODULES
+-----------------------
+- send: File sending
+- serve-static: Static file serving
+- fs-minipass: File system streams
+- graceful-fs: Improved fs module
+- chokidar: File watching
+
+4.6 UTILITY MODULES
+-------------------
+- debug: Debugging utility
+- ms: Time parsing
+- depd: Deprecation warnings
+- http-errors: Error creation
+- statuses: Status codes
+- vary: Vary header
+- fresh: HTTP freshness checking
+- etag: ETag generation
+
+4.7 DEVELOPMENT MODULES
+-----------------------
+- nodemon: Auto-restart server
+- ignore-by-default: Default ignore patterns
+- pstree.remy: Process tree utilities
+- simple-update-notifier: Update notifications
+- touch: Touch file utility
+- undefsafe: Safe property access
+
+4.8 STREAM/BUFFER MODULES
+-------------------------
+- readable-stream: Stream implementation
+- safe-buffer: Safe Buffer API
+- string_decoder: String decoding
+- buffer: Buffer polyfill
+- bl: Buffer list
+
+4.9 PATH/GLOB MODULES
+---------------------
+- glob: File pattern matching
+- minimatch: Glob matching
+- path-to-regexp: Path to regex conversion
+- picomatch: Fast glob matching
+- braces: Brace expansion
+- fill-range: Fill number ranges
+
+4.10 COMPRESSION/ARCHIVE MODULES
+--------------------------------
+- tar: TAR archive handling
+- tar-fs: TAR file system
+- tar-stream: TAR streaming
+- minizlib: Zlib wrapper
+- minipass: Minimal streams
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
+For detailed information about any specific module, refer to:
+- Official documentation: https://www.npmjs.com/package/<package-name>
+- GitHub repository: Usually linked in package.json
+- Module README: Located in node_modules/<package-name>/README.md
+
+Project-specific usage can be found in:
+- c:\voroAi\voro-app\index.js (Main server file)
+- c:\voroAi\voro-app\database.js (Database operations)
+- c:\voroAi\voro-app\admin-api.js (Admin API routes)
+- c:\voroAi\voro-app\user-auth.js (User authentication)

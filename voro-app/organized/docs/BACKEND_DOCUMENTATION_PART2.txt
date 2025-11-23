@@ -1,0 +1,286 @@
+BACKEND DOCUMENTATION - Part 2: database.js
+================================================================================
+
+FILE: database.js
+PURPOSE: Manages ALL database operations - creating tables, storing data, retrieving data
+
+================================================================================
+UNDERSTANDING DATABASES
+================================================================================
+
+A database is like a digital filing cabinet with organized drawers (tables).
+Each table has rows (records) and columns (fields).
+
+Example:
+Table: users
+| id | name    | email           |
+|----|---------|-----------------|
+| 1  | John    | john@email.com  |
+| 2  | Sarah   | sarah@email.com |
+
+We use SQL (Structured Query Language) to talk to the database.
+
+================================================================================
+LINE-BY-LINE EXPLANATION
+================================================================================
+
+LINE 1: const sqlite3 = require('sqlite3').verbose();
+--------
+WHAT IT DOES: Loads the SQLite database library
+SYNTAX:
+  - require('sqlite3'): Loads the library
+  - .verbose(): Enables detailed error messages
+WHY: SQLite is a simple database that stores everything in one file
+
+LINE 2: const path = require('path');
+--------
+WHAT IT DOES: Loads path utilities
+WHY: To build file paths correctly
+
+LINE 3: const fs = require('fs');
+--------
+WHAT IT DOES: Loads file system utilities
+WHY: To check if files exist, create folders, etc.
+
+LINE 5: const DB_PATH = path.join(__dirname, 'college_data.db');
+--------
+WHAT IT DOES: Creates the full path to the database file
+SYNTAX:
+  - __dirname: Current folder
+  - path.join(): Combines paths safely
+  - 'college_data.db': Database filename
+RESULT: Something like: c:\voroAi\voro-app\college_data.db
+WHY: Stores the database location
+
+LINE 8-134: function initDatabase() {...}
+--------
+WHAT IT DOES: Creates and sets up the database
+SYNTAX:
+  - function initDatabase(): Defines a function
+  - return new Promise(): Returns a Promise (for async operations)
+  - (resolve, reject): Functions to call when done/error
+WHY: Must create tables before using database
+
+LINE 10: const db = new sqlite3.Database(DB_PATH, (err) => {...});
+--------
+WHAT IT DOES: Opens/creates the database file
+SYNTAX:
+  - new sqlite3.Database(): Creates database connection
+  - DB_PATH: Where to store the file
+  - (err) => {...}: Callback if there's an error
+WHY: Connects to the database
+
+LINE 20: db.serialize(() => {...});
+--------
+WHAT IT DOES: Runs database commands one after another
+SYNTAX:
+  - serialize(): Ensures commands don't overlap
+  - () => {...}: Function containing the commands
+WHY: Database operations must happen in order
+
+LINE 22-32: db.run(`CREATE TABLE IF NOT EXISTS topics (...)`);
+--------
+WHAT IT DOES: Creates the "topics" table
+SQL BREAKDOWN:
+  - CREATE TABLE: SQL command to make a new table
+  - IF NOT EXISTS: Only create if it doesn't exist yet
+  - topics: Table name
+  - (...): Column definitions
+    - id INTEGER PRIMARY KEY AUTOINCREMENT: Unique ID, auto-increases
+    - key TEXT UNIQUE NOT NULL: Topic key (must be unique, required)
+    - name TEXT NOT NULL: Topic name (required)
+    - icon TEXT: Topic icon (optional)
+    - keywords TEXT: Search keywords (optional)
+    - created_at DATETIME DEFAULT CURRENT_TIMESTAMP: Auto-set creation time
+    - updated_at DATETIME DEFAULT CURRENT_TIMESTAMP: Auto-set update time
+WHY: Stores topic categories (Admissions, Fees, Housing, etc.)
+
+LINE 35-48: db.run(`CREATE TABLE IF NOT EXISTS options (...)`);
+--------
+WHAT IT DOES: Creates the "options" table
+SQL BREAKDOWN:
+  - topic_id INTEGER NOT NULL: Links to topics table
+  - option_key TEXT NOT NULL: Option letter (A, B, C)
+  - title TEXT NOT NULL: Option title
+  - description TEXT: Short description
+  - answer TEXT NOT NULL: The full answer
+  - FOREIGN KEY (topic_id) REFERENCES topics(id): Links to topics
+  - ON DELETE CASCADE: If topic deleted, delete its options too
+  - UNIQUE(topic_id, option_key): Can't have duplicate option A in same topic
+WHY: Stores the actual Q&A content
+
+LINE 51-60: db.run(`CREATE TABLE IF NOT EXISTS feedback (...)`);
+--------
+WHAT IT DOES: Creates the "feedback" table
+WHY: Stores user feedback/comments
+
+LINE 63-72: db.run(`CREATE TABLE IF NOT EXISTS queries (...)`);
+--------
+WHAT IT DOES: Creates the "queries" table
+WHY: Stores user questions from chat input
+
+LINE 75-89: db.run(`CREATE TABLE IF NOT EXISTS users (...)`);
+--------
+WHAT IT DOES: Creates the "users" table
+COLUMNS:
+  - username: Login name
+  - email: Email address
+  - password_hash: Encrypted password
+  - full_name: Student's full name
+  - grade: Student's grade/class
+  - student_id: Student ID number
+  - roll_number: Roll number
+  - login_count: How many times logged in
+  - last_login: Last login time
+WHY: Stores student accounts
+
+LINE 92-101: db.run(`CREATE TABLE IF NOT EXISTS user_sessions (...)`);
+--------
+WHAT IT DOES: Creates the "user_sessions" table
+WHY: Tracks who is currently logged in
+
+LINE 104-113: db.run(`CREATE TABLE IF NOT EXISTS user_logins (...)`);
+--------
+WHAT IT DOES: Creates the "user_logins" table
+WHY: Keeps history of all logins
+
+LINE 116-131: db.get('SELECT COUNT(*) as count FROM topics', ...);
+--------
+WHAT IT DOES: Checks if database is empty
+SQL:
+  - SELECT COUNT(*): Counts rows
+  - as count: Names the result "count"
+  - FROM topics: In the topics table
+LOGIC:
+  - if (row.count === 0): If no topics exist
+  - seedInitialData(db): Add sample data
+WHY: First time setup - adds example topics
+
+LINE 137-303: function seedInitialData(db) {...}
+--------
+WHAT IT DOES: Adds sample topics and options to empty database
+PROCESS:
+  1. Creates array of initial data
+  2. Prepares INSERT statements
+  3. Loops through data and inserts it
+  4. Tracks completion
+WHY: Gives the chatbot something to talk about initially
+
+LINE 256-258: const insertTopic = db.prepare(`INSERT INTO topics...`);
+--------
+WHAT IT DOES: Prepares an SQL statement for reuse
+SYNTAX:
+  - db.prepare(): Compiles SQL for efficiency
+  - INSERT INTO topics: SQL command to add row
+  - VALUES (?, ?, ?): Placeholders for data
+WHY: Faster than creating new SQL each time
+
+LINE 269: insertTopic.run([topic.key, topic.name, topic.icon], function(err) {...});
+--------
+WHAT IT DOES: Inserts one topic
+SYNTAX:
+  - .run([...]): Executes the prepared statement
+  - [topic.key, topic.name, topic.icon]: Data to insert (replaces ?)
+  - function(err): Callback when done
+  - this.lastID: Gets the ID of inserted row
+WHY: Adds the topic to database
+
+LINE 306-348: function getAllTopics(db) {...}
+--------
+WHAT IT DOES: Retrieves all topics with their options
+SQL:
+  - SELECT: Get data
+  - t.id, t.key, t.name: Topic columns (t = topics table)
+  - o.id as option_id: Option columns (o = options table)
+  - FROM topics t: Main table
+  - LEFT JOIN options o ON t.id = o.topic_id: Combine with options
+  - ORDER BY t.id, o.option_key: Sort results
+PROCESS:
+  1. Query database
+  2. Group results by topic
+  3. Build nested object structure
+WHY: Frontend needs topics organized with their options
+
+LINE 322-343: rows.forEach((row) => {...});
+--------
+WHAT IT DOES: Converts flat rows into nested structure
+LOGIC:
+  - if (!topics[row.key]): If topic not in object yet
+  - topics[row.key] = {...}: Create topic entry
+  - topics[row.key].options[row.option_key] = {...}: Add option
+RESULT: {admissions: {name: "Admissions", options: {A: {...}, B: {...}}}}
+WHY: Easier for frontend to use
+
+LINE 351-391: function getTopicByKey(db, topicKey) {...}
+--------
+WHAT IT DOES: Gets one specific topic
+WHY: When user selects a topic, fetch just that one
+
+LINE 394-469: function findAnswer(db, userInput) {...}
+--------
+WHAT IT DOES: Searches for answer based on user's message
+PROCESS:
+  1. Normalize input (lowercase, trim)
+  2. Check for menu commands
+  3. Search for topic match
+  4. Search for option match
+  5. Return appropriate response
+WHY: Core chatbot logic - matches questions to answers
+
+LINE 396: const normalized = userInput.trim().toLowerCase();
+--------
+WHAT IT DOES: Cleans up user input
+SYNTAX:
+  - .trim(): Removes spaces from start/end
+  - .toLowerCase(): Converts to lowercase
+EXAMPLE: "  HELLO  " becomes "hello"
+WHY: Makes matching easier
+
+LINE 406-413: if (['menu', 'start', 'help'].includes(normalized)) {...}
+--------
+WHAT IT DOES: Checks if user typed a command
+SYNTAX:
+  - ['menu', 'start', 'help']: Array of commands
+  - .includes(normalized): Checks if normalized is in array
+WHY: Special commands show the menu
+
+LINE 416-456: for (const [topicKey, topicValue] of Object.entries(topics)) {...}
+--------
+WHAT IT DOES: Loops through each topic to find match
+SYNTAX:
+  - Object.entries(topics): Converts object to array of [key, value] pairs
+  - for (const [topicKey, topicValue] of ...): Loops through pairs
+WHY: Searches all topics
+
+LINE 422: const optionMatch = normalized.match(/option\s*([a-z])/);
+--------
+WHAT IT DOES: Checks if user mentioned "option A" or similar
+SYNTAX:
+  - .match(): Searches for pattern
+  - /option\s*([a-z])/: Regular expression
+    - option: Literal text "option"
+    - \s*: Zero or more spaces
+    - ([a-z]): Captures one letter
+EXAMPLE: "option A" matches, captures "a"
+WHY: Lets users request specific options
+
+LINE 471-477: module.exports = {...};
+--------
+WHAT IT DOES: Exports functions for other files to use
+SYNTAX:
+  - module.exports: Node.js way to share code
+  - {...}: Object containing functions
+WHY: index.js can now use these functions
+
+================================================================================
+SUMMARY
+================================================================================
+
+database.js is the DATA MANAGER. It:
+1. Creates database tables
+2. Seeds initial data
+3. Provides functions to query data
+4. Handles search logic
+5. Organizes data for frontend
+
+All data flows through this file.

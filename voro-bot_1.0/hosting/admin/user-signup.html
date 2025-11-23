@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Voro Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, hsl(200, 95%, 45%), hsl(180, 80%, 50%));
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .signup-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 420px;
+            width: 100%;
+            padding: 40px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 48px;
+            color: hsl(200, 95%, 45%);
+            margin-bottom: 10px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: hsl(220, 15%, 15%);
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            font-size: 14px;
+            color: hsl(220, 10%, 45%);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: hsl(220, 15%, 15%);
+            margin-bottom: 6px;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid hsl(220, 15%, 90%);
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .password-wrapper .form-input {
+            padding-right: 45px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: hsl(200, 95%, 45%);
+            box-shadow: 0 0 0 3px hsla(200, 95%, 45%, 0.1);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: hsl(220, 10%, 45%);
+            font-size: 18px;
+            padding: 4px;
+        }
+
+        .password-toggle:hover {
+            color: hsl(200, 95%, 45%);
+        }
+
+        .password-hint {
+            font-size: 12px;
+            color: hsl(220, 10%, 45%);
+            margin-top: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, hsl(200, 95%, 45%), hsl(180, 80%, 50%));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: hsl(220, 10%, 45%);
+        }
+
+        .login-link a {
+            color: hsl(200, 95%, 45%);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: hsl(0, 70%, 95%);
+            color: hsl(0, 70%, 40%);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="signup-container">
+        <div class="logo">
+            <i class="fi fi-rr-robot"></i>
+            <h1>Voro Bot</h1>
+            <p>Create your account to get started.</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="signupForm">
+            <div class="form-group">
+                <label class="form-label" for="fullName">Full Name</label>
+                <input type="text" id="fullName" class="form-input" placeholder="Enter your full name" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="studentId">Student ID</label>
+                <input type="text" id="studentId" class="form-input" placeholder="Enter your student ID" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="rollNumber">Roll Number</label>
+                <input type="text" id="rollNumber" class="form-input" placeholder="Enter your roll number" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" id="username" class="form-input" placeholder="Choose a username" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" class="form-input" placeholder="Create a password" required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
+                        <i class="fi fi-rr-eye"></i>
+                    </button>
+                </div>
+                <div class="password-hint">Must be at least 6 characters</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="confirmPassword">Confirm Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm your password"
+                        required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword', this)">
+                        <i class="fi fi-rr-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="/user/login">Login</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:4000/api';
+
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fi fi-rr-eye-crossed';
+            } else {
+                input.type = 'password';
+                icon.className = 'fi fi-rr-eye';
+            }
+        }
+
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('fullName').value;
+            const studentId = document.getElementById('studentId').value;
+            const rollNumber = document.getElementById('rollNumber').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const errorMessage = document.getElementById('errorMessage');
+
+            errorMessage.classList.remove('show');
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating account...';
+
+            try {
+                const response = await fetch(`${API_BASE}/user/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password,
+                        full_name: fullName,
+                        student_id: studentId,
+                        roll_number: rollNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = '/chatbot';
+                } else {
+                    errorMessage.textContent = data.error || 'Signup failed';
+                    errorMessage.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                errorMessage.textContent = 'Failed to connect to server';
+                errorMessage.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign Up';
+            }
+        });
+    </script>
+</body>
+
+</html>
