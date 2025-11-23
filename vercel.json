@@ -1,15 +1,3 @@
 {
-  "version": 2,
-  "buildCommand": "cd voro-bot/backend && npm install",
-  "installCommand": "cd voro-bot/backend && npm install",
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/voro-bot/backend/index.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/voro-bot/backend/index.js"
-    }
-  ]
+  "version": 2
 }
