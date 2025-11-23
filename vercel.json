@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "voro-bot/backend/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "voro-bot/backend/index.js"
+    },
+    {
+      "src": "/admin",
+      "dest": "voro-bot/backend/admin.html"
+    },
+    {
+      "src": "/login",
+      "dest": "voro-bot/backend/login.html"
+    },
+    {
+      "src": "/user/login",
+      "dest": "voro-bot/backend/user-login.html"
+    },
+    {
+      "src": "/chatbot",
+      "dest": "voro-bot/voroai-main.html"
+    },
+    {
+      "src": "/",
+      "dest": "voro-bot/voroai-main.html"
+    }
+  ]
+}
