@@ -338,11 +338,9 @@ function setupAdminRoutes(app, requireAdminAuth) {
     const { status } = req.body;
 
     if (!status || !["new", "read", "replied", "archived"].includes(status)) {
-      res
-        .status(400)
-        .json({
-          error: "Valid status is required (new, read, replied, archived)",
-        });
+      res.status(400).json({
+        error: "Valid status is required (new, read, replied, archived)",
+      });
       return;
     }
 
@@ -414,11 +412,9 @@ function setupAdminRoutes(app, requireAdminAuth) {
     const { status } = req.body;
 
     if (!status || !["new", "read", "replied", "archived"].includes(status)) {
-      res
-        .status(400)
-        .json({
-          error: "Valid status is required (new, read, replied, archived)",
-        });
+      res.status(400).json({
+        error: "Valid status is required (new, read, replied, archived)",
+      });
       return;
     }
 
@@ -466,6 +462,25 @@ function setupAdminRoutes(app, requireAdminAuth) {
       res.json({ message: "Query deleted successfully" });
       db.close();
     });
+  });
+
+  // ========== CHAT LOGS ENDPOINTS (NEW) ==========
+
+  // Get all chat logs
+  app.get("/api/admin/chats", (req, res) => {
+    const db = getDb();
+    db.all(
+      "SELECT * FROM chat_logs ORDER BY created_at DESC LIMIT 200",
+      (err, chats) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          db.close();
+          return;
+        }
+        res.json(chats);
+        db.close();
+      }
+    );
   });
 
   // ========== USER MANAGEMENT ENDPOINTS ==========

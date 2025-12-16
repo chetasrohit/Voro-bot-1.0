@@ -387,6 +387,23 @@
             font-size: 0.95rem;
             line-height: 1.5;
         }
+
+        /* Chat Accordion */
+        .chat-user-header {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .chat-user-header:hover {
+            background-color: var(--bg-primary);
+        }
+        .chat-history {
+            display: none;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        .chat-history.active {
+            display: block;
+        }
     </style>
 </head>
 
@@ -410,6 +427,9 @@
             </button>
             <button class="nav-item" onclick="switchTab('queries', this)">
                 <span class="nav-icon"><i class="fi fi-rr-question"></i></span> Queries
+            </button>
+            <button class="nav-item" onclick="switchTab('chats', this)">
+                <span class="nav-icon"><i class="fi fi-rr-messages"></i></span> User Chats
             </button>
             <button class="nav-item" onclick="switchTab('logins', this)">
                 <span class="nav-icon"><i class="fi fi-rr-users-alt"></i></span> User Logins
@@ -502,6 +522,15 @@
                 <button class="btn btn-secondary" onclick="loadQueries()"> Refresh</button>
             </div>
             <div id="queries-list" class="loading">Loading queries...</div>
+        </div>
+
+        <!-- User Chats Tab -->
+        <div id="chats-tab" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="section-title" style="margin: 0;">AI Conversation Logs</h2>
+                <button class="btn btn-secondary" onclick="loadChats()"> Refresh</button>
+            </div>
+            <div id="chats-list" class="loading">Loading chats...</div>
         </div>
     </div>
 
@@ -627,6 +656,7 @@
                 'add-topic': 'Add New Topic',
                 'feedback': 'User Feedback',
                 'queries': 'User Queries',
+                'chats': 'AI Conversation Logs',
                 'logins': 'User Login History'
             };
             document.getElementById('page-title').textContent = titles[tabName] || 'Admin Panel';
@@ -1347,6 +1377,110 @@
             } catch (error) {
                 showAlert('Error updating query status', 'error');
             }
+
+        // Load Chats (Grouped by User)
+        async function loadChats() {
+            try {
+                const container = document.getElementById('chats-list');
+                container.innerHTML = '<div class="loading">Loading chats...</div>';
+
+                const response = await fetch(`${API_BASE}/api/admin/chats`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const chats = await response.json();
+
+                if (!Array.isArray(chats)) {
+                    throw new Error('Invalid response format');
+                }
+
+                if (chats.length === 0) {
+                    container.innerHTML = '<p>No chat logs yet.</p>';
+                    return;
+                }
+
+                // Group chats by user
+                const chatsByUser = {};
+                chats.forEach(chat => {
+                    const userName = chat.user_name || 'Anonymous';
+                    if (!chatsByUser[userName]) {
+                        chatsByUser[userName] = [];
+                    }
+                    chatsByUser[userName].push(chat);
+                });
+
+                // Generate HTML
+                let html = '';
+                Object.entries(chatsByUser).forEach(([userName, userChats], index) => {
+                    // Sort user chats by time (newest first for display, or oldest first for history flow?)
+                    // Let's sort oldest to newest for the history flow
+                    userChats.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    
+                    const lastActive = new Date(userChats[userChats.length - 1].created_at).toLocaleString();
+
+                    html += `
+                        <div class="card" style="margin-bottom: 15px; padding: 0; overflow: hidden;">
+                            <div class="card-header chat-user-header" onclick="toggleChatHistory('chat-history-${index}')" style="padding: 20px; margin: 0;">
+                                <div>
+                                    <div class="card-title" style="margin-bottom: 5px; color: #4f46e5;">
+                                        <i class="fi fi-rr-user"></i> ${userName}
+                                    </div>
+                                    <small style="color: var(--text-secondary);">
+                                        Last Active: ${lastActive} | Messages: ${userChats.length}
+                                    </small>
+                                </div>
+                                <div>
+                                    <i class="fi fi-rr-angle-down"></i>
+                                </div>
+                            </div>
+                            <div id="chat-history-${index}" class="chat-history" style="padding: 20px;">
+                    `;
+
+                    userChats.forEach(chat => {
+                        const time = new Date(chat.created_at).toLocaleString();
+                        html += `
+                            <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <strong style="color: #3b82f6;">User</strong>
+                                    <small style="color: var(--text-secondary);">${time}</small>
+                                </div>
+                                <div style="margin-bottom: 12px; background: white; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    ${chat.user_message}
+                                </div>
+                                
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <strong style="color: #7c3aed;">Bot</strong>
+                                </div>
+                                <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; border-left: 4px solid #7c3aed;">
+                                    ${chat.bot_reply}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading chats:', error);
+                showError('chats-list', `Failed to load chats: ${error.message}`);
+            }
+        }
+
+        function toggleChatHistory(id) {
+            const element = document.getElementById(id);
+            if (element.classList.contains('active')) {
+                element.classList.remove('active');
+            } else {
+                element.classList.add('active');
+            }
+        }
         }
 
         // Delete query

@@ -729,6 +729,9 @@
                             <path d="M19 12H5" />
                         </svg>
                     </button>
+                    <button class="icon-button" onclick="showQueryModal()" title="Submit Query">
+                        <i class="fi fi-rr-interrogation"></i>
+                    </button>
                     <button class="icon-button" onclick="showFeedbackModal()" title="Send Feedback">
                         <i class="fi fi-rr-comment-alt"></i>
                     </button>
@@ -766,7 +769,7 @@
                         <i class="fi fi-rr-home"></i>
                         <span>Home</span>
                     </button>
-                    <input type="text" class="message-input" placeholder="Type your query here..." id="messageInput"
+                    <input type="text" class="message-input" placeholder="Ask me anything..." id="messageInput"
                         onkeypress="handleKeyPress(event)">
                     <button class="send-button" onclick="sendMessage()" id="sendButton" title="Send Message">
                         <i class="fi fi-rr-paper-plane"></i>
@@ -849,6 +852,40 @@
         </div>
     </div>
 
+    <!-- Query Modal -->
+    <div class="modal" id="queryModal" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Submit Query</h2>
+                <button class="modal-close" onclick="closeQueryModal()">&times;</button>
+            </div>
+            <form id="queryForm" onsubmit="submitQuery(event)">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="queryName" class="form-input" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grade/Class</label>
+                    <input type="text" id="queryGrade" class="form-input" placeholder="e.g., 10th Grade" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Roll Number</label>
+                    <input type="text" id="queryRollNo" class="form-input" placeholder="Enter your roll number" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="queryEmail" class="form-input" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea id="queryMessage" class="form-textarea" required placeholder="What is your query?"
+                        rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;">Submit Query</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Login Modal -->
     <div class="modal" id="loginModal" onclick="closeModalOnOutsideClick(event)">
         <div class="modal-content">
@@ -892,6 +929,23 @@
         // Check authentication on page load
         async function checkAuth() {
             try {
+                // First check if we have local details to auto-login
+                const localDetails = loadUserDetails();
+                if (localDetails) {
+                    // Attempt silent login/update
+                    await fetch(`${BACKEND_URL}/user/entry`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            full_name: localDetails.name,
+                            grade: localDetails.grade,
+                            roll_number: localDetails.rollNo,
+                            email: localDetails.email
+                        })
+                    });
+                }
+
                 const response = await fetch(`${BACKEND_URL}/user/check-auth`, {
                     credentials: 'include'
                 });
@@ -903,6 +957,17 @@
             }
         }
 
+        // Local Storage Helpers
+        function saveUserDetails(name, grade, rollNo, email) {
+            const details = { name, grade, rollNo, email };
+            sessionStorage.setItem('voro_user_details', JSON.stringify(details));
+        }
+
+        function loadUserDetails() {
+            const stored = sessionStorage.getItem('voro_user_details');
+            return stored ? JSON.parse(stored) : null;
+        }
+
         // Logout function
         async function logout() {
             try {
@@ -910,7 +975,8 @@
                     method: 'POST',
                     credentials: 'include'
                 });
-                window.location.href = '/user/login';
+                sessionStorage.removeItem('voro_user_details'); // Clear local details
+                window.location.reload(); // Reload to reset state
             } catch (error) {
                 console.error('Logout failed:', error);
                 window.location.href = '/user/login';
@@ -920,7 +986,7 @@
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
             // Load theme preference
-            const savedTheme = localStorage.getItem('theme');
+            const savedTheme = sessionStorage.getItem('theme');
             if (savedTheme === 'dark') {
                 isDark = true;
                 document.body.classList.add('dark');
@@ -936,10 +1002,10 @@
             isDark = !isDark;
             if (isDark) {
                 document.body.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
+                sessionStorage.setItem('theme', 'dark');
             } else {
                 document.body.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
+                sessionStorage.setItem('theme', 'light');
             }
             updateThemeIcon();
         }
@@ -1156,25 +1222,19 @@
             showMenu();
         }
 
-        // Send Message (Query)
+        // Send Message (AI Chat)
         async function sendMessage() {
-            // Check if user is logged in before allowing message send
-            let isLoggedIn = false;
-            try {
-                isLoggedIn = await checkAuth();
-            } catch (e) {
-                console.error('Auth check error:', e);
-            }
-
-            if (!isLoggedIn) {
-                showLoginModal();
-                return;
-            }
-
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
 
             if (!message) return;
+
+            // Check auth before sending
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) {
+                showLoginModal();
+                return;
+            }
 
             if (message.toLowerCase() === 'menu') {
                 resetChat();
@@ -1183,35 +1243,41 @@
             }
 
             // Show user message
-
+            addMessage('user', message);
 
             // Clear input immediately
             input.value = '';
 
-            // We don't show typing indicator or bot reply for queries as per request
-            // Just save to backend silently
+            // Show typing indicator
+            showTyping();
+            toggleInput(true);
 
             try {
-                // Save query with logged-in username
-                const response = await fetch(`${BACKEND_URL}/queries`, {
+                // Call AI endpoint
+                const response = await fetch(`${BACKEND_URL}/reply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        message: message,
-                        user_name: 'User'
+                        userInput: message
                     })
                 });
+
+                hideTyping();
+
                 if (response.ok) {
-                    showToast('✅ Query saved');
+                    const data = await response.json();
+                    addMessage('assistant', data.reply);
                 } else {
                     const err = await response.json();
-                    showToast('❌ Failed to save query: ' + (err.error || response.status));
+                    addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
                 }
-                // No bot reply requested
             } catch (error) {
                 console.error('Send error:', error);
-                showToast('❌ Error sending query');
+                hideTyping();
+                addMessage('assistant', 'Sorry, I couldn\'t connect to the server. Please check your connection.');
+            } finally {
+                toggleInput(false);
             }
         }
 
@@ -1312,9 +1378,102 @@
             }
         }
 
+        // Query Modal
+        function showQueryModal() {
+            const modal = document.getElementById('queryModal');
+            modal.classList.add('active');
+            
+            // Pre-fill if details exist
+            const details = loadUserDetails();
+            if (details) {
+                document.getElementById('queryName').value = details.name || '';
+                document.getElementById('queryGrade').value = details.grade || '';
+                document.getElementById('queryRollNo').value = details.rollNo || '';
+                document.getElementById('queryEmail').value = details.email || '';
+            }
+        }
+
+        function closeQueryModal() {
+            document.getElementById('queryModal').classList.remove('active');
+        }
+
+        async function submitQuery(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('queryName').value;
+            const email = document.getElementById('queryEmail').value;
+            const message = document.getElementById('queryMessage').value;
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+
+            if (!message.trim()) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/queries`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        message,
+                        user_name: name,
+                        user_email: email
+                    })
+                });
+
+                // Also ensure user is logged in/registered with these details
+                await fetch(`${BACKEND_URL}/user/entry`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        full_name: name,
+                        grade: document.getElementById('queryGrade').value,
+                        roll_number: document.getElementById('queryRollNo').value,
+                        email: email
+                    })
+                });
+
+                // Save details locally
+                saveUserDetails(
+                    name,
+                    document.getElementById('queryGrade').value,
+                    document.getElementById('queryRollNo').value,
+                    email
+                );
+
+                if (response.ok) {
+                    alert('Your query has been submitted! We will get back to you soon.');
+                    closeQueryModal();
+                    e.target.reset();
+                } else {
+                    const err = await response.json();
+                    alert('Error: ' + (err.error || 'Failed to submit query'));
+                }
+            } catch (error) {
+                console.error('Query error:', error);
+                alert('Failed to connect to server.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
         // Login Modal Functions
         function showLoginModal() {
-            document.getElementById('loginModal').classList.add('active');
+            const modal = document.getElementById('loginModal');
+            modal.classList.add('active');
+
+            // Pre-fill if details exist
+            const details = loadUserDetails();
+            if (details) {
+                document.getElementById('loginFullName').value = details.name || '';
+                document.getElementById('loginGrade').value = details.grade || '';
+                document.getElementById('loginRollNo').value = details.rollNo || '';
+                document.getElementById('loginEmail').value = details.email || '';
+            }
         }
 
         function closeLoginModal() {
@@ -1352,6 +1511,7 @@
                 if (response.ok) {
                     closeLoginModal();
                     document.getElementById('loginForm').reset();
+                    saveUserDetails(fullName, grade, rollNo, email); // Save locally
                     alert('Welcome! You can now use the chatbot.');
                 } else {
                     errorDiv.textContent = data.error || 'Failed to save data';

@@ -61,25 +61,26 @@ initDatabase()
 
 // Main API endpoint for chat replies
 app.post("/api/reply", async (req, res) => {
-  if (!db) {
-    res.status(503).json({ error: "Database not initialized" });
-    return;
-  }
-
   try {
     const { userInput } = req.body;
-    const result = await findAnswer(db, userInput || "");
 
-    if (result) {
-      res.json({ reply: result.reply });
-    } else {
-      res.json({
-        reply:
-          'Could you share a bit more detail? Mention a topic like "housing" or "fees" so I can send the right info.',
-      });
-    }
+    // Import the AI bot logic (Lazy load to ensure DB is ready)
+    const { askBot } = require("./ai-bot");
+    const { logUserChat } = require("./database");
+
+    // Get answer from AI
+    const aiResponse = await askBot(userInput || "");
+
+    // Log the conversation
+    const userName = req.session?.username || "Anonymous";
+    await logUserChat(db, userName, userInput, aiResponse);
+
+    res.json({ reply: aiResponse });
   } catch (error) {
-    console.error("Error processing reply:", error);
+    console.error("=== ERROR in /api/reply ===");
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("============================");
     res.status(500).json({ error: "Internal server error" });
   }
 });

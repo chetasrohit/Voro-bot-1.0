@@ -13,11 +13,16 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@langchain/community": "^1.0.5",
+    "@langchain/core": "^1.1.0",
+    "@langchain/google-genai": "^2.0.0",
+    "@langchain/openai": "^0.3.14",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
+    "langchain": "^1.1.1",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
